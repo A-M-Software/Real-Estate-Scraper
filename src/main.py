@@ -1,0 +1,38 @@
+# coding=utf-8
+
+from .clients import ALL_CLIENTS
+from .advertisment import Advertisement
+from .telegram import send_advertisements
+from .logger import base_logger as logger
+
+
+async def main() -> None:
+    """
+    Collect advertisements from all sources.
+    """
+
+    advertisements: list[Advertisement] = []
+
+    for Client in ALL_CLIENTS:
+        try:
+            # Initialize the client (with default config)
+            client = Client()
+
+            # Collect advertisements from the client and extend the list
+            advertisements.extend(await client.get_advertisements())
+
+        except (Exception, ValueError):
+            # Failed
+            logger.error(
+                f"Failed to collect advertisements from {Client.__name__}",
+                exc_info=True,
+            )
+
+    # Send collected advertisements to Telegram
+    await send_advertisements(advertisements=advertisements)
+
+
+if __name__ == "__main__":
+    # Run the main function in an asynchronous event loop
+    import asyncio
+    asyncio.run(main())

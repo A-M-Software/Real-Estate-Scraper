@@ -1,0 +1,4 @@
+Aiogram
+Asyncio
+HttpX
+Pydantic-Settings
