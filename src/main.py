@@ -1,12 +1,14 @@
 # coding=utf-8
 
+from datetime import datetime
+
 from .clients import ALL_CLIENTS
 from .advertisment import Advertisement
 from .telegram import send_advertisements
 from .logger import base_logger as logger
 
 
-async def main() -> None:
+async def scrap_advertisements(after_date: datetime | None = None) -> None:
     """
     Collect advertisements from all sources.
     """
@@ -18,7 +20,7 @@ async def main() -> None:
             async with Client() as client:
                 # Collect advertisements from the client and extend the list
                 advertisements.extend(
-                    await client.get_advertisements(),
+                    await client.get_latest_advertisements(after_date=after_date),
                 )
 
         except (Exception, ValueError):
@@ -30,9 +32,3 @@ async def main() -> None:
 
     # Send collected advertisements to Telegram
     await send_advertisements(advertisements=advertisements)
-
-
-if __name__ == "__main__":
-    # Run the main function in an asynchronous event loop
-    import asyncio
-    asyncio.run(main())
