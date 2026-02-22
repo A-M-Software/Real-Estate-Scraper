@@ -3,6 +3,7 @@
 import pickle
 from typing import Self
 from logging import Logger
+from datetime import datetime
 from types import TracebackType
 from abc import ABC, abstractmethod
 
@@ -66,6 +67,7 @@ class BaseClient(AsyncClient, ABC):
         """
 
         await super().__aexit__(exc_type, exc_value, traceback)
+        await self.aclose()
 
         self._dump_data(self.data)
 
@@ -136,7 +138,7 @@ class BaseClient(AsyncClient, ABC):
         return response.json()
 
     @abstractmethod
-    async def get_latest_advertisements(self) -> list[Advertisement]:
+    async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
         """
         Get advertisements from the source.
         """

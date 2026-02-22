@@ -6,5 +6,5 @@ from .olx import OLXClient
 
 ALL_CLIENTS = [
     DimRiaClient,
-    OLXClient,
+    # OLXClient,
 ]
