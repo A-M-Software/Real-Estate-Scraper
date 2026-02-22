@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from aiogram import Bot
+from aiogram.enums import ParseMode
 
 from .config import config
 from .advertisment import Advertisement
@@ -36,6 +37,7 @@ async def _send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: i
             chat_id=chat_id,
             photo=advertisement.photo_url,
             caption=advertisement.formatted_text,
+            parse_mode=ParseMode.HTML,
         )
 
     else:
@@ -43,4 +45,5 @@ async def _send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: i
         await bot.send_message(
             chat_id=chat_id,
             text=advertisement.formatted_text,
+            parse_mode=ParseMode.HTML,
         )

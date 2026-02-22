@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from locale import setlocale, LC_TIME
 
 
+_MAX_DESC_LENGTH = 512  # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
+
+
 @dataclass
 class Advertisement:
     # Apartment info
@@ -44,7 +47,7 @@ class Advertisement:
 
         # Heading
 
-        text = f"<b>{self.street}, {self.city}</b>"
+        text = f"📍 <b>{self.street}, {self.city}</b>"
 
         if self.building_name:
             # Add to heading
@@ -54,7 +57,7 @@ class Advertisement:
 
         # Rooms, area
 
-        text += f"{self.rooms}-кімнатна квартира, {self.area}м²\n"
+        text += f"🏠 {self.rooms}-кімнатна квартира, {self.area}м²\n"
 
         # Price
 
@@ -70,27 +73,32 @@ class Advertisement:
 
         if price and price_per_sqm:
             # Add both total price and price per square meter
-            text += f"{_fmt_price(price)} ({_fmt_price(price_per_sqm)} за м²)"
+            text += f"💰 {_fmt_price(price)} ({_fmt_price(price_per_sqm)} за м²)"
 
         elif price:
             # Only total price
-            text += f"{_fmt_price(price)}"
+            text += f"💰 {_fmt_price(price)}"
 
         elif price_per_sqm:
             # Only price per square meter
-            text += f"{_fmt_price(price_per_sqm)} за м²"
+            text += f"💰 {_fmt_price(price_per_sqm)} за м²"
 
         text += "\n"
 
         # Published at
 
         setlocale(LC_TIME, "uk_UA.UTF-8")  # Set locale to Ukrainian for date formatting
-        text += f"Опубліковано: " + self.published_at.strftime("%d %B, %H:%M") + "\n"
+        text += f"🕓 Опубліковано: " + self.published_at.strftime("%d %B (%A), %H:%M") + "\n"
 
         # Description
 
         if self.description:
-            # Add description (truncated if too long)
-            text += f"\n<i>{self.description[:197] + '...' if len(self.description) > 200 else self.description}</i>"
+            if len(self.description) > _MAX_DESC_LENGTH:
+                # Truncate description if it's too long to fit in Telegram message
+                text += f"\n<blockquote expandable>{self.description[:_MAX_DESC_LENGTH - 3]}...</blockquote>"
+
+            else:
+                # Add full description
+                text += f"\n<blockquote expandable>{self.description}</blockquote>"
 
         return text
