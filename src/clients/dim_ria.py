@@ -83,6 +83,35 @@ class DimRiaClient(BaseClient):
         )
 
     async def get_latest_advertisements(self) -> list[Advertisement]:
+    @classmethod
+    def _to_advertisement(cls, data: dict) -> Advertisement:
+        """
+        Convert raw data from the Dim.Ria API to an Advertisement object.
+        """
+
+        return Advertisement(
+            # Apartment info
+            city=data.get("city_name_uk"),
+            street=data.get("street_name_uk"),
+            building_name=data.get("user_newbuild_name_uk"),
+            rooms=data.get("rooms_count"),
+            area=data.get("total_square_meters"),
+            description=" ".join(data["description_uk"].split()) if data.get("description_uk") else "",
+
+            # Basic info
+            id=data.get("realty_id"),
+            url=(cls.public_url + data["beautiful_url"]) if data.get("beautiful_url") else None,
+            published_at=datetime.fromtimestamp(data["publishing_date_ts"]),
+            source="Dim.Ria",
+
+            # Price
+            price=data.get("price"),
+            currency=data.get("currency_type"),
+            price_per_sqm=data.get("price_type") == "за квадрат",
+
+            # Images
+            photo_url=(cls.cdn_url + data["main_photo"].replace(".jpg", "xl.jpg")) if data.get("main_photo") else None,
+        )
         """
         Get latest advertisements from the Dim.Ria.
         """

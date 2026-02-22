@@ -28,6 +28,8 @@ async def _send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: i
     Send a single advertisement to Telegram channel.
     """
 
+    # TODO: URL button
+
     if advertisement.photo_url:
         # Send as photo
         await bot.send_photo(
