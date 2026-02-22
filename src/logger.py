@@ -1,7 +1,7 @@
 # coding=utf-8
 
 import logging
-from config import config
+from .config import config
 
 
 # Prepare logs directory

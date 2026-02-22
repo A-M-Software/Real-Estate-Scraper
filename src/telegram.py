@@ -2,8 +2,8 @@
 
 from aiogram import Bot
 
-from src.config import config
-from advertisment import Advertisement
+from .config import config
+from .advertisment import Advertisement
 
 
 async def send_advertisements(

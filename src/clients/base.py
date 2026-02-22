@@ -67,9 +67,7 @@ class BaseClient(AsyncClient, ABC):
 
         await super().__aexit__(exc_type, exc_value, traceback)
 
-        with self.config.data_file.open("wb") as data_file:
-            # Save data to file
-            pickle.dump(self.data, data_file)
+        self._dump_data(self.data)
 
     def _dump_data(self, data: dict) -> None:
         """

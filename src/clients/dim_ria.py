@@ -223,6 +223,9 @@ class DimRiaClient(BaseClient):
             if ids := data.get("items"):
                 # Process IDs based on parameters
                 if existing_ids:
+                    # Add IDs until found
+                    found = False
+
                     for advertisement_id in ids:
                         if advertisement_id in existing_ids:
                             # Found an existing ID, stop loading more pages
@@ -230,9 +233,14 @@ class DimRiaClient(BaseClient):
                                 f"Found an existing ID={advertisement_id} on page {page}, "
                                 f"stopping loading more pages",
                             )
+                            found = True
                             break
 
                         advertisement_ids.append(advertisement_id)
+
+                    if found:
+                        # Stop loading more pages
+                        break
 
                 elif after_date:
                     # Add only IDs posted after the specified date to the list
@@ -267,93 +275,6 @@ class DimRiaClient(BaseClient):
             # Finished loading pages
             self.logger.info(f"Found {len(advertisement_ids)} advertisement IDs, no more pages to load")
 
-        # if existing_ids := self.data["existing_ids"]:  # type: set[int]
-        #     # Process advertisements only before any of existing IDs
-        #     self.logger.info(f"Using {len(existing_ids)} existing IDs to filter advertisements")
-        #     page = 0
-        #     total_pages: int | None = None
-        #
-        #     while (page := page + 1) <= (total_pages or 1):
-        #         # Load each page
-        #         self.logger.info(f"Loading page ({page}/{total_pages or '?'}) of advertisements")
-        #         data = await self.search_advertisements(page=page - 1, **kwargs)
-        #
-        #         if ids := data.get("items"):
-        #             for advertisement_id in ids:
-        #                 if advertisement_id in existing_ids:
-        #                     # Found an existing ID, stop loading more pages
-        #                     self.logger.info(
-        #                         f"Found an existing ID={advertisement_id} on page {page}, "
-        #                         f"stopping loading more pages",
-        #                     )
-        #                     break
-        #
-        #                 advertisement_ids.append(advertisement_id)
-        #
-        #         if total_count := data.get("count"):
-        #             # Calculate total pages
-        #             total_pages = ceil(total_count / 100)  # 100 items per page
-        #
-        #     else:
-        #         # Finished loading pages
-        #         self.logger.info(f"Found {len(advertisement_ids)} advertisement IDs, no more pages to load")
-        #
-        # elif after_date:
-        #     # Process advertisements only after the specified date
-        #     self.logger.info(f"Filtering out advertisements published after {after_date}")
-        #     page = 0
-        #     total_pages: int | None = None
-        #
-        #     while (page := page + 1) <= (total_pages or 1):
-        #         # Load each page
-        #         self.logger.info(f"Loading page ({page}/{total_pages or '?'}) of advertisements")
-        #         data = await self.search_advertisements(page=page - 1, **kwargs)
-        #
-        #         if ids := data.get("items"):
-        #             # Add only IDs posted after the specified date to the list
-        #             after_ids = await self._find_published_after(advertisement_ids=ids, after_date=after_date)
-        #             advertisement_ids.extend(after_ids)
-        #
-        #             if len(after_ids) < len(ids):
-        #                 # No more on next pages, stop loading more pages
-        #                 self.logger.info(
-        #                     f"Found an ID posted before {after_date} on page {page}, "
-        #                     f"stopping loading more pages",
-        #                 )
-        #                 break
-        #
-        #         if total_count := data.get("count"):
-        #             # Calculate total pages
-        #             total_pages = ceil(total_count / 100)  # 100 items per page
-        #
-        #     else:
-        #         # Finished loading pages
-        #         self.logger.info(f"Found {len(advertisement_ids)} advertisement IDs, no more pages to load")
-        #
-        # else:
-        #     # Get all advertisements
-        #     self.logger.info("No existing IDs or 'after_date' provided, getting all advertisements")
-        #     page = 0
-        #     total_pages: int | None = None
-        #
-        #     while (page := page + 1) <= (total_pages or 1):
-        #         # Load each page
-        #         self.logger.info(f"Loading page ({page}/{total_pages or '?'}) of advertisements")
-        #         data = await self.search_advertisements(page=page - 1, **kwargs)
-        #
-        #         if ids := data.get("items"):
-        #             # Add IDs to the list
-        #             advertisement_ids.extend(ids)
-        #
-        #         if total_count := data.get("count"):
-        #             # Calculate total pages
-        #             total_pages = ceil(total_count / 100)  # 100 items per page
-        #
-        #     else:
-        #         # Finished loading pages
-        #         self.logger.info(f"Found {len(advertisement_ids)} advertisement IDs, no more pages to load")
-
-        advertisement_ids = advertisement_ids[:20]  # TODO: Remove
         self.logger.info(f"Loading info for {len(advertisement_ids)} advertisement(s)")
 
         for index, advertisement_id in enumerate(advertisement_ids, start=1):
