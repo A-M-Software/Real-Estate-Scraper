@@ -25,7 +25,7 @@ def setup_logger(
 
     if not logger.handlers:
         # Not found => create
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
         # Log to file
         file_handler = logging.FileHandler(config.log.path / f"{name}.log", encoding="utf-8")
@@ -45,3 +45,4 @@ def setup_logger(
 base_logger = setup_logger("base")
 dim_ria_logger = setup_logger("dim_ria")
 olx_logger = setup_logger("olx")
+telegram_logger = setup_logger("telegram")

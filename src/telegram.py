@@ -5,6 +5,7 @@ from aiogram import Bot
 from aiogram.enums import ParseMode
 
 from .config import config
+from .logger import telegram_logger as logger
 from .advertisment import Advertisement
 
 
@@ -16,6 +17,13 @@ async def send_advertisements(
     """
     Send given advertisements to configured Telegram channel using.
     """
+
+    if not advertisements:
+        # Nothing to send
+        logger.info("No advertisements to send to Telegram")
+        return
+
+    logger.info(f"Sending {len(advertisements)} advertisements to Telegram channel {chat_id}")
 
     # Initialize Telegram bot
     bot = Bot(token=token)
@@ -32,6 +40,11 @@ async def _send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: i
     """
     Send a single advertisement to Telegram channel.
     """
+
+    logger.info(
+        f"Sending advertisement ID={advertisement.id} (source={advertisement.source}) "
+        f"to Telegram channel {chat_id}"
+    )
 
     if advertisement.photo_url:
         # Send as photo

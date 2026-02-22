@@ -76,7 +76,7 @@ class BaseClient(AsyncClient, ABC):
         Write data to file.
         """
 
-        self.logger.debug(f"Dumping data to {self.config.data_file}")
+        self.logger.debug(f"Dumping data to '{self.config.data_file}'")
 
         try:
             with self.config.data_file.open("wb") as data_file:
@@ -92,7 +92,7 @@ class BaseClient(AsyncClient, ABC):
         Read data from file.
         """
 
-        self.logger.debug(f"Loading data from {self.config.data_file}")
+        self.logger.debug(f"Loading data from '{self.config.data_file}'")
 
         try:
             with self.config.data_file.open("rb") as data_file:
@@ -111,7 +111,7 @@ class BaseClient(AsyncClient, ABC):
         """
 
         # Log request
-        self.logger.debug(f"Performing {method} {url} request ({kwargs})")
+        self.logger.debug(f"Performing {method} '{url}' request ({kwargs})")
 
         # Make a request & check status
         response = await self.request(
@@ -129,7 +129,7 @@ class BaseClient(AsyncClient, ABC):
         self.logger.debug(
             f"Response <{response.status_code} {response.reason_phrase}> "
             f"in {response.elapsed.total_seconds():.3f}s ({len(response.content)} bytes): "
-            f"{text}, {response.headers}"
+            f"{text}; Headers: {response.headers};"
         )
 
         # Check status

@@ -17,6 +17,9 @@ async def scrap_advertisements(after_date: datetime | None = None) -> None:
 
     for Client in ALL_CLIENTS:
         try:
+            # Iterate each client
+            logger.info(f"Collecting advertisements from {Client.__name__} ({after_date=})")
+
             async with Client() as client:
                 # Collect advertisements from the client and extend the list
                 advertisements.extend(
