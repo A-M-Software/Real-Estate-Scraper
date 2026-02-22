@@ -4,6 +4,8 @@ from datetime import datetime
 from dataclasses import dataclass
 from locale import setlocale, LC_TIME
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 _MAX_DESC_LENGTH = 512  # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 
@@ -102,3 +104,18 @@ class Advertisement:
                 text += f"\n<blockquote expandable>{self.description}</blockquote>"
 
         return text
+
+    @property
+    def url_button_markup(self) -> InlineKeyboardMarkup | None:
+        """
+        Get URL button markup for Telegram message if URL is available
+        """
+
+        if self.url:
+            return InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text=f"Переглянути на {self.source}", url=self.url)
+                    ],
+                ]
+            )
