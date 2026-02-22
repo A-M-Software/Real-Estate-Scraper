@@ -120,11 +120,16 @@ class BaseClient(AsyncClient, ABC):
             **kwargs,
         )
 
-        # Log response
+        # Log response with truncated text if it's too long
+        text = (
+            response.text
+            if len(response.text) < 512 else
+            f"{response.text[:256]}...{response.text[-256:]}"
+        )
         self.logger.debug(
             f"Response <{response.status_code} {response.reason_phrase}> "
             f"in {response.elapsed.total_seconds():.3f}s ({len(response.content)} bytes): "
-            f"{response.text}, {response.headers}"
+            f"{text}, {response.headers}"
         )
 
         # Check status
