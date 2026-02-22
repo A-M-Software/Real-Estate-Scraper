@@ -15,11 +15,11 @@ async def main() -> None:
 
     for Client in ALL_CLIENTS:
         try:
-            # Initialize the client (with default config)
-            client = Client()
-
-            # Collect advertisements from the client and extend the list
-            advertisements.extend(await client.get_advertisements())
+            async with Client() as client:
+                # Collect advertisements from the client and extend the list
+                advertisements.extend(
+                    await client.get_advertisements(),
+                )
 
         except (Exception, ValueError):
             # Failed
