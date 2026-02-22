@@ -276,6 +276,7 @@ class DimRiaClient(BaseClient):
             self.logger.info(f"Found {len(advertisement_ids)} advertisement IDs, no more pages to load")
 
         self.logger.info(f"Loading info for {len(advertisement_ids)} advertisement(s)")
+        advertisement_ids.sort(reverse=True)
 
         for index, advertisement_id in enumerate(advertisement_ids, start=1):
             if advertisement_id not in checked_ids:
@@ -289,6 +290,14 @@ class DimRiaClient(BaseClient):
                     # Load advertisement data
                     data = await self.get_advertisement(advertisement_id)
                     advertisement = self._to_advertisement(data)
+
+                except OverflowError:
+                    # Too many requests, stop loading more advertisements
+                    self.logger.error(
+                        f"({index}/{len(advertisement_ids)}) "
+                        f"Too many requests while loading advertisement ID={advertisement_id}, stopping",
+                    )
+                    break
 
                 except (ValueError, Exception):
                     # Failed
@@ -312,6 +321,6 @@ class DimRiaClient(BaseClient):
             # Save ID to data
             self.data["existing_ids"].add(advertisement_id)
 
-        self.logger.info(f"Successfully collected {len(advertisements)} advertisements")
+        self.logger.info(f"Successfully collected {len(advertisements)}/{len(advertisement_ids)} advertisements")
 
         return advertisements

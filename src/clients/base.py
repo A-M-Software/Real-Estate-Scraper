@@ -132,6 +132,10 @@ class BaseClient(AsyncClient, ABC):
             f"{text}; Headers: {response.headers};"
         )
 
+        if response.status_code == 429:
+            # Too many requests
+            raise OverflowError(response.text)
+
         # Check status
         response.raise_for_status()
 
