@@ -34,7 +34,7 @@ class BaseClient(AsyncClient, ABC):
         )
 
         # Initialize data & create directory if needed
-        self.data = None
+        self.data = {}
         self.config.data_file.parent.mkdir(parents=True, exist_ok=True)
 
     @classmethod
@@ -110,35 +110,27 @@ class BaseClient(AsyncClient, ABC):
         Returns JSON response.
         """
 
+        # Log request
         self.logger.debug(f"Performing {method} {url} request ({kwargs})")
 
-        try:
-            # Make a request & check status
-            response = await self.request(
-                method=method,
-                url=url,
-                **kwargs,
-            )
-            response.raise_for_status()
+        # Make a request & check status
+        response = await self.request(
+            method=method,
+            url=url,
+            **kwargs,
+        )
 
-            # Parse JSON
-            data = response.json()
+        # Log response
+        self.logger.debug(
+            f"Response <{response.status_code} {response.reason_phrase}> "
+            f"in {response.elapsed.total_seconds():.3f}s ({len(response.content)} bytes): "
+            f"{response.text}, {response.headers}"
+        )
 
-        except HTTPError as error:
-            # Request failed
-            self.logger.error(f"Failed to perform {method} {url} request", exc_info=True)
-            raise error
+        # Check status
+        response.raise_for_status()
 
-        except (ValueError, Exception) as error:
-            # Probably failed to parse JSON
-            self.logger.error(f"Failed to parse JSON response from {method} {url} request", exc_info=True)
-            raise error
-
-        else:
-            # Log success
-            self.logger.debug(f"Successfully performed {method} {url} request")
-
-        return data
+        return response.json()
 
     @abstractmethod
     async def get_latest_advertisements(self) -> list[Advertisement]:
