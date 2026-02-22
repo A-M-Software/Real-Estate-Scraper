@@ -9,6 +9,7 @@ RUN apt-get update && \
 
 ENV LANG uk_UA.UTF-8
 ENV LC_ALL uk_UA.UTF-8
+ENV LC_TIME uk_UA.UTF-8
 
 # Define work directory
 WORKDIR /
