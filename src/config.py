@@ -7,21 +7,29 @@ from pydantic.fields import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class DimRiaConfig(BaseModel):
+class BaseClientConfig(BaseModel):
+    """
+    Base configuration for API clients, including common parameters.
+    """
+
+    api_key: str
+    data_file: Path
+
+
+class DimRiaConfig(BaseClientConfig):
     """
     Configuration for DimRia service, which provides additional user information.
     """
 
-    api_key: str
     city_ids: list[int]
 
 
-class OLXConfig(BaseModel):
+class OLXConfig(BaseClientConfig):
     """
     Configuration for OLX service, which provides additional user information.
     """
 
-    api_key: str
+    pass
 
 
 class TelegramConfig(BaseModel):

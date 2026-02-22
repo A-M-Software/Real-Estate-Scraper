@@ -210,3 +210,6 @@ __marimo__/
 
 # Logs folder
 logs/
+
+# Data files
+**/*.pkl
