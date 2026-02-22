@@ -33,5 +33,8 @@ async def scrap_advertisements(after_date: datetime | None = None) -> None:
                 exc_info=True,
             )
 
+    # Sort by published date
+    advertisements.sort(key=lambda adv: adv.published_at)
+
     # Send collected advertisements to Telegram
     await send_advertisements(advertisements=advertisements)
