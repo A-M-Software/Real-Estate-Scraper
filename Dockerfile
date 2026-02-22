@@ -1,10 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM python:3.14.0
 
+# Install ukrainian locale
 RUN apt-get update && \
     apt-get install -y locales && \
     sed -i -e 's/# uk_UA UTF-8/uk_UA UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales
+
+ENV LANG uk_UA.UTF-8
+ENV LC_ALL uk_UA.UTF-8
 
 # Define work directory
 WORKDIR /
