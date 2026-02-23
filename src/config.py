@@ -29,7 +29,8 @@ class OLXConfig(BaseClientConfig):
     Configuration for OLX service, which provides additional user information.
     """
 
-    pass
+    client_id: str
+    client_secret: str
 
 
 class TelegramConfig(BaseModel):
