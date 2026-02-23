@@ -7,7 +7,7 @@ from datetime import datetime
 from types import TracebackType
 from abc import ABC, abstractmethod
 
-from httpx import AsyncClient, HTTPError
+from httpx import AsyncClient, Response
 
 from ..config import BaseClientConfig
 from ..advertisment import Advertisement
@@ -104,10 +104,9 @@ class BaseClient(AsyncClient, ABC):
             self.logger.warning(f"Unable to load data from {self.config.data_file}, returning empty data")
             return {}
 
-    async def request_json(self, method: str, url: str, **kwargs) -> dict:
+    async def _request(self, method: str, url: str, **kwargs) -> Response:
         """
         Perform a request with given parameters.
-        Returns JSON response.
         """
 
         # Log request
@@ -139,7 +138,27 @@ class BaseClient(AsyncClient, ABC):
         # Check status
         response.raise_for_status()
 
-        return response.json()
+        return response
+
+    async def request_json(self, method: str, url: str, **kwargs) -> dict:
+        """
+        Perform a request with given parameters.
+        Returns JSON response.
+        """
+
+        return (
+            await self._request(method, url, **kwargs)
+        ).json()
+
+    async def request_html(self, method: str, url: str, **kwargs) -> str:
+        """
+        Perform a request with given parameters.
+        Returns JSON response.
+        """
+
+        return (
+            await self._request(method, url, **kwargs)
+        ).text
 
     @abstractmethod
     async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
