@@ -1,6 +1,9 @@
 # coding=utf-8
 
-from datetime import datetime, timedelta
+import re
+from lxml import html
+
+from datetime import datetime, date
 
 from .base import BaseClient
 from ..advertisment import Advertisement
@@ -8,9 +11,25 @@ from ..logger import olx_logger
 from ..config import config
 
 
+_MONTHS = {
+    "січня": 1,
+    "лютого": 2,
+    "березня": 3,
+    "квітня": 4,
+    "травня": 5,
+    "червня": 6,
+    "липня": 7,
+    "серпня": 8,
+    "вересня": 9,
+    "жовтня": 10,
+    "листопада": 11,
+    "грудня": 12,
+}
+
+
 class OLXClient(BaseClient):
     """
-    Client for interacting with the OLX API.
+    Client for interacting with the OLX.
     """
 
     # Overload required attributes
@@ -18,8 +37,8 @@ class OLXClient(BaseClient):
     config = config.olx
 
     # URLs
-    api_url = "https://api.olx.ua/api/partner"
-    token_url = "https://api.olx.ua/api/open/oauth/token"
+    api_url = "https://www.olx.ua"
+    search_url = "/uk/nedvizhimost/kvartiry/prodazha-kvartir/chernovtsy/"
 
     @classmethod
     def _init_params(cls) -> dict:
@@ -30,87 +49,146 @@ class OLXClient(BaseClient):
         return {
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0",
-                "Version": "2.0",
             },
         }
 
-    async def request_json(self, method: str, url: str, **kwargs) -> dict:
+    def _parse_searched_advertisement(self, advertisement: html.HtmlElement) -> dict:
         """
-        Perform a request with given parameters and authorization.
-        Returns JSON response.
-        """
-
-        # Set authorization header with access token
-        kwargs.setdefault("headers", {})
-        kwargs["headers"]["Authorization"] = f"Bearer {await self.access_token}"
-
-        return await super().request_json(
-            method=method,
-            url=url,
-            **kwargs,
-        )
-
-    @property
-    async def access_token(self) -> str:
-        """
-        Get access token for the OLX API.
+        Parse advertisement from the search results page,
+        and returns a dictionary with `id`, `url`, `published_at` and `is_promoted` fields.
         """
 
-        if access_token := self.data.get("access_token"):
-            if expires_at := self.data.get("access_token_expires_at"):
-                if expires_at > datetime.now():
-                    # Valid access token exists, return it
-                    return access_token
+        # Prepare variables
+        today = date.today()
 
-            # Expired
-            self.logger.info("Access token expired")
+        # Parse advertisement's details
+        advertisement_id, = advertisement.xpath("@id")  # type: str
+        url, *_ = advertisement.xpath(".//a/@href")  # type: str
+
+        # Check if required fields are found
+        assert advertisement_id is not None, "Advertisement ID not found"
+        assert url is not None, "Advertisement URL not found"
+
+        if url.startswith("/"):
+            # Add the base URL if the URL is relative
+            url = self.api_url + url
+
+        # Check if the advertisement is promoted
+        is_promoted = url.endswith("promoted")
+
+        # Parse publication date
+        published_str, = advertisement.xpath(".//p[@data-testid=\"location-date\"]//text()")  # type: str
+        assert published_str, "Publication date not found"
+        published_str = published_str.split(" - ")[-1]
+
+        if match := re.match(r"Сьогодні о (?P<time>\d\d:\d\d)", published_str):
+            # Advertisement published today => parse hour & minute
+            time_str = match.group("time")
+            published_at = datetime.strptime(time_str, "%H:%M")
+            published_at = published_at.replace(year=today.year, month=today.month, day=today.day)
+
+        elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
+            # Advertisement published on a specific date => parse day, month & year
+            day = int(match.group("day"))
+            year = int(match.group("year"))
+            month = _MONTHS[match.group("month").lower()]
+            published_at = datetime(year=year, month=month, day=day)
 
         else:
-            # No access token found
-            self.logger.info("No access token found")
+            # Unknown date format
+            raise ValueError(f"Unknown date format: {published_str!r}")
 
-        # No valid access token, request a refresh
-        return await self._refresh_tokens()
+        return {
+            "id": advertisement_id,
+            "url": url,
+            "published_at": published_at,
+            "is_promoted": is_promoted,
+        }
 
-    @property
-    def refresh_token(self) -> str:
+    async def search_advertisements(self, **params) -> list[dict]:
         """
-        Get refresh token for the OLX API.
-        """
-
-        return self.data.get("refresh_token") or self.config.api_key
-
-    async def _refresh_tokens(self) -> str:
-        """
-        Request new access and refresh tokens using the refresh token.
-        Store the new tokens and their expiration time in the client's data for future use.
-        Return the new access token.
+        Search for latest advertisements on the OLX, and returns a list of objects.
+        Each object contains `id`, `url`, `published_at` and `is_promoted` fields.
         """
 
-        self.logger.info(f"Refreshing tokens for OLX API")
+        # Set list view for parsing
+        params["view"] = "list"
 
-        # Request token
-        response = await self.request_json(
-            method="POST",
-            url=self.token_url,
-            data={
-                "grant_type": "refresh_token",
-                "refresh_token": self.refresh_token,
-                "client_id": self.config.client_id,
-                "client_secret": self.config.client_secret,
-            },
+        # Request page
+        response = await self.request_html(
+            method="GET",
+            url=self.search_url,
+            params=params,
         )
 
-        # Update tokens
-        self.data["refresh_token"] = response["refresh_token"]
-        self.data["access_token"] = response["access_token"]
-        self.data["access_token_expires_at"] = datetime.now() + timedelta(seconds=response["expires_in"])
+        # Parse all advertisements from the page
+        tree = html.fromstring(response)
+        advertisements: list[html.HtmlElement] = tree.xpath("//div[contains(@data-cy, \"l-card\")]")
 
-        return response["access_token"]
+        # Prepare for parsing
+        self.logger.debug(f"Found {len(advertisements)} advertisements to parse")
+        items = []
+
+        for index, advertisement in enumerate(advertisements, start=1):
+            try:
+                # Parse advertisement's details
+                item = self._parse_searched_advertisement(advertisement)
+
+            except (ValueError, Exception) as error:
+                # Failed to parse
+                self.logger.error(
+                    f"({index}/{len(advertisements)}) "
+                    f"Failed to parse advertisement",
+                    exc_info=True,
+                )
+
+            else:
+                # Add parsed item to the list
+                items.append(item)
+
+                self.logger.debug(
+                    f"({index}/{len(advertisements)}) "
+                    f"Successfully parsed advertisement: {item}"
+                )
+
+        # Sort by publication date (most recent first)
+        items.sort(key=lambda i: i["published_at"], reverse=True)
+
+        return items
 
     async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
         """
         Get advertisements from the OLX.
         """
 
-        return []
+        self.logger.info(f"Getting latest advertisements from OLX")
+
+        # Prepare variables
+        advertisements: list[Advertisement] = []
+        existing_ids: set[int] = self.data.get("existing_ids") or set()
+        self.data.setdefault("existing_ids", set())
+
+        # Prepare parameters for searching
+        kwargs = {
+            "currency": "USD",
+            "search[private_business]": "private",  # Only owner
+            "search[order]": "created_at:desc",  # Publication date (descending)
+        }
+
+        # Load advertisements
+        data = await self.search_advertisements(**kwargs)
+        index = 0
+
+        for index, item in enumerate(data):
+            if item["id"] in existing_ids:
+                # Found an existing advertisement, stop loading more
+                self.logger.info(f"Found an existing ID={item['id']}, stop loading more")
+                break
+
+            elif after_date is not None and item["published_at"] < after_date:
+                # Found an advertisement published before the specified date, stop loading more
+                self.logger.info(f"Found an ID posted before '{after_date}', stop loading more")
+                break
+
+        # Limit to only new advertisements
+        data = data[:index]
