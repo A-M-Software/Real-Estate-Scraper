@@ -225,7 +225,7 @@ class OLXClient(BaseClient):
         # Price
         price_str, = side.xpath(".//div[@data-testid=\"ad-price-container\"]//h3/text()")  # type: str
         price_str, currency = price_str.rsplit(maxsplit=1)
-        price = float(price_str.replace(" ", ""))
+        price = int(float(price_str.replace(" ", "")))
 
         # Images
         photo_url, *_ = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src") + [None]  # type: str
