@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import re
 from datetime import datetime
 from dataclasses import dataclass
 from locale import setlocale, LC_TIME
@@ -122,6 +123,11 @@ class Advertisement:
                 # Date and time information available
                 text += self.published_at.strftime("%d %B (%A), %H:%M") + "\n"
 
+        # Broker forbidden
+
+        if self.brokers_forbidden:
+            text += "🚫 Посередникам не турбувати\n"
+
         # Description
 
         if self.description:
@@ -149,3 +155,46 @@ class Advertisement:
                     ],
                 ]
             )
+
+    @property
+    def brokers_forbidden(self) -> bool:
+        """
+        Returns True if somewhere in text fields (description, street, building name)
+        there are words that indicate that brokers are forbidden
+        """
+
+        # Prepare regex phrases
+        brokers_re = (
+            r"(р[іи][єе]лт[оеа]ра?м?и?ы?"
+            r"|посе?редника?м?и?)"
+        )
+        please_re = (
+            r"(прошу"
+            r"|про[сз]ь?ба"
+            r"|проханн?я"
+            r"|будь[ \-]?ласка"
+            r"|п[оа]жалуй?cта"
+            r"|пж[лста]*)"
+        )
+        do_not_re = (
+            r"н[еі]т?"
+        )
+        call_re = (
+            r"(турбу(вати|йте)"
+            r"|беспоко(ить|йте)"
+            r"|цікавлять"
+            r"|[иі]нтересують?"
+            r"|д?звон[иі]т[ьи]"
+            r"|потр[еа]б[уею]т?ь?[ся]"
+            r"|потрібн[оі]"
+            r"|нужн[оіиы])"
+        )
+        sep_re = r"[\s,.]*"
+        final_re = rf"{brokers_re}{sep_re}{please_re}?{sep_re}{do_not_re}{sep_re}{call_re}"
+
+        for field in (self.street, self.description):
+            if re.search(final_re, field, re.IGNORECASE):
+                # Found words indicating that brokers are forbidden
+                return True
+
+        return False
