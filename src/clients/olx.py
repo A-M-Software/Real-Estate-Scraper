@@ -34,6 +34,22 @@ class OLXClient(BaseClient):
             },
         }
 
+    async def request_json(self, method: str, url: str, **kwargs) -> dict:
+        """
+        Perform a request with given parameters and authorization.
+        Returns JSON response.
+        """
+
+        # Set authorization header with access token
+        kwargs.setdefault("headers", {})
+        kwargs["headers"]["Authorization"] = f"Bearer {await self.access_token}"
+
+        return await super().request_json(
+            method=method,
+            url=url,
+            **kwargs,
+        )
+
     @property
     async def access_token(self) -> str:
         """
