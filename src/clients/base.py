@@ -18,6 +18,7 @@ class BaseClient(AsyncClient, ABC):
     Base class for all clients.
     """
 
+    name: str
     logger: Logger
     config: BaseClientConfig
     api_url: str = ""

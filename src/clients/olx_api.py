@@ -14,6 +14,7 @@ class OLXAPIClient(BaseClient):
     """
 
     # Overload required attributes
+    name = "OLX"
     logger = olx_logger
     config = config.olx
 

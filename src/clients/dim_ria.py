@@ -19,6 +19,7 @@ class DimRiaClient(BaseClient):
     """
 
     # Overload required attributes
+    name = "Dim.Ria"
     logger = dim_ria_logger
     config = config.dim_ria
 
@@ -107,7 +108,7 @@ class DimRiaClient(BaseClient):
             id=data.get("realty_id"),
             url=(cls.public_url + data["beautiful_url"]) if data.get("beautiful_url") else None,
             published_at=datetime.fromtimestamp(data["publishing_date_ts"]),
-            source="Dim.Ria",
+            source=cls.name,
 
             # Price
             price=data.get("price"),
