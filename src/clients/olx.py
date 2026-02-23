@@ -157,6 +157,100 @@ class OLXClient(BaseClient):
 
         return items
 
+    async def get_advertisement(self, url: str) -> str:
+        """
+        Get advertisement's page from the OLX by URL.
+        """
+
+        return await self.request_html(method="GET", url=url)
+
+    @classmethod
+    def _to_advertisement(cls, text: str, item: dict) -> Advertisement:
+        """
+        Parse advertisement's page and returns an `Advertisement` object.
+        Also, requires helper `item` object to get `id`, `url` and `published_at` fields.
+        """
+
+        def get_property(name: str) -> str | None:
+            """
+            Get value for given property (if any).
+            Otherwise, returns None.
+            """
+
+            for property_ in properties:
+                if property_.startswith(name + ": "):
+                    # Found property => get value
+                    return property_.split(name + ": ")[-1]
+
+        def clean(value: str) -> str | None:
+            """
+            Removes extra spaces from the value (if it's not None).
+            """
+
+            return " ".join(value.split()) if value else None
+
+        # Parse advertisement's page
+        tree = html.fromstring(text)
+
+        # Split blocks
+        main, = tree.xpath("//div[@data-testid=\"main\"]")
+        side, = tree.xpath("//div[@data-testid=\"aside\"]")
+        properties: list[str] = main.xpath(".//div[@data-testid=\"ad-parameters-container\"]/p/text()")
+        properties = [clean(p) for p in properties if p.split()]
+
+        # City
+        city, *_ = side.xpath(".//p[text()=\"Місцезнаходження\"]/../div//p[1]/text()") + [None]  # type: str
+
+        # Street (can't get street from OLX, so using advertisement title
+        street, *_ = side.xpath(".//div[@data-cy=\"offer_title\"]//h4/text()") + [None]  # type: str
+
+        # Building name
+        building_name = get_property("Назва ЖК")
+
+        # Rooms
+        if rooms := get_property("Кількість кімнат"):
+            # Get only number
+            rooms = rooms.split()[0]
+
+        if area := get_property("Загальна площа"):
+            # Get only number
+            area = int(float(area.split()[0]))
+
+        # Description
+        description = "\n".join(map(clean, main.xpath(".//div[@data-testid=\"ad_description\"]//div/text()")))
+
+        # Price
+        price_str, = side.xpath(".//div[@data-testid=\"ad-price-container\"]//h3/text()")  # type: str
+        price_str, currency = price_str.rsplit(maxsplit=1)
+        price = float(price_str.replace(" ", ""))
+
+        # Images
+        photo_url, *_ = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src") + [None]  # type: str
+
+        return Advertisement(
+            # Apartment info
+            city=clean(city),
+            street=clean(street),
+            building_name=building_name,  # Already cleaned in property
+            rooms=rooms,
+            area=area,
+            description=description,  # Already cleaned
+
+            # Basic info
+            id=item["id"],
+            url=item["url"],
+            published_at=item["published_at"],
+            source=cls.name,
+
+            # Price
+            price=price,
+            currency=currency,
+            price_per_sqm=False,
+
+            # Images
+            photo_url=photo_url,
+        )
+
     async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
         """
         Get advertisements from the OLX.
@@ -186,10 +280,56 @@ class OLXClient(BaseClient):
                 self.logger.info(f"Found an existing ID={item['id']}, stop loading more")
                 break
 
-            elif after_date is not None and item["published_at"] < after_date:
+            elif after_date is not None and item["published_at"] < after_date and not item["is_promoted"]:
                 # Found an advertisement published before the specified date, stop loading more
                 self.logger.info(f"Found an ID posted before '{after_date}', stop loading more")
                 break
 
+        for duplicate_index, duplicate_item in reversed(list(enumerate(data))):
+            for check_index, check_item in enumerate(data[:duplicate_index]):
+                if duplicate_item["id"] == check_item["id"]:
+                    # Found a duplicate ID => remove it
+                    self.logger.debug(f"Found a duplicate ID={check_item['id']}, removing it")
+                    data.pop(duplicate_index)
+                    break
+
         # Limit to only new advertisements
         data = data[:index]
+        self.logger.info(f"Loading info for {len(data)} advertisement(s)")
+
+        for index, item in enumerate(data, start=1):
+            # Load each advertisement
+            advertisement_id = item["id"]
+            url = item["url"]
+
+            try:
+                # Load advertisement's details
+                text = await self.get_advertisement(url=url)
+                advertisement = self._to_advertisement(text=text, item=item)
+
+            except OverflowError:
+                # Too many requests, stop loading more advertisements
+                self.logger.error(
+                    f"({index}/{len(data)}) "
+                    f"Too many requests while loading advertisement ID={advertisement_id}, stopping",
+                )
+                break
+
+            except (ValueError, Exception):
+                # Failed
+                self.logger.error(
+                    f"({index}/{len(data)}) "
+                    f"Failed to load data for advertisement ID={advertisement_id}",
+                    exc_info=True,
+                )
+
+            else:
+                # Success
+                advertisements.append(advertisement)
+
+            # Save ID to data
+            self.data["existing_ids"].add(advertisement_id)
+
+        self.logger.info(f"Successfully collected {len(advertisements)}/{len(data)} advertisements")
+
+        return advertisements

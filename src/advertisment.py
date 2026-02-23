@@ -16,7 +16,7 @@ class Advertisement:
     city: str
     street: str
     building_name: str | None
-    rooms: int
+    rooms: int | str
     area: int  # Square meters
     description: str
 
@@ -59,7 +59,7 @@ class Advertisement:
 
         # Rooms, area
 
-        text += f"🏠 {self.rooms}-кімнатна квартира, {self.area}м²\n"
+        text += f"🏠 {self.rooms} кімнатна квартира, {self.area}м²\n"
 
         # Price
 
