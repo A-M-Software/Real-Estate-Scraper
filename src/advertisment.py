@@ -6,6 +6,8 @@ from locale import setlocale, LC_TIME
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from .logger import base_logger as logger
+
 
 _MAX_DESC_LENGTH = 512  # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 
@@ -24,6 +26,7 @@ class Advertisement:
     id: int
     url: str
     published_at: datetime
+    published_at_date: bool  # True if published_at contains only date information without time
     source: str
 
     # Price
@@ -59,7 +62,18 @@ class Advertisement:
 
         # Rooms, area
 
-        text += f"🏠 {self.rooms} кімнатна квартира, {self.area}м²\n"
+        if self.rooms or self.area:
+            text += f"🏠 "
+            texts = []
+
+            if self.rooms:
+                sep = "-" if not str(self.rooms).endswith("+") else " "  # Support for "3+" rooms format
+                texts.append(f"{self.rooms}{sep}кімнатна квартира")
+
+            if self.area:
+                texts.append(f"{self.area}м²")
+
+            text += ", ".join(texts) + "\n"
 
         # Price
 
@@ -89,8 +103,24 @@ class Advertisement:
 
         # Published at
 
-        setlocale(LC_TIME, "uk_UA.UTF-8")  # Set locale to Ukrainian for date formatting
-        text += f"🕓 Опубліковано: " + self.published_at.strftime("%d %B (%A), %H:%M") + "\n"
+        if self.published_at:
+            try:
+                # Set locale to Ukrainian for date formatting
+                setlocale(LC_TIME, "uk_UA.UTF-8")
+
+            except (ValueError, Exception):
+                # Unable to set locale :(
+                logger.warning(f"Unable to set 'uk_UA.UTF-8' locale for date formatting")
+
+            text += f"🕓 Опубліковано: "
+
+            if self.published_at_date:
+                # No time information, only date
+                text += self.published_at.strftime("%d %B (%A)") + "\n"
+
+            else:
+                # Date and time information available
+                text += self.published_at.strftime("%d %B (%A), %H:%M") + "\n"
 
         # Description
 

@@ -108,6 +108,7 @@ class DimRiaClient(BaseClient):
             id=data.get("realty_id"),
             url=(cls.public_url + data["beautiful_url"]) if data.get("beautiful_url") else None,
             published_at=datetime.fromtimestamp(data["publishing_date_ts"]),
+            published_at_date=False,  # Not only date but time as well
             source=cls.name,
 
             # Price

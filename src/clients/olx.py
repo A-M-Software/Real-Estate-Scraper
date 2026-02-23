@@ -87,6 +87,7 @@ class OLXClient(BaseClient):
             time_str = match.group("time")
             published_at = datetime.strptime(time_str, "%H:%M")
             published_at = published_at.replace(year=today.year, month=today.month, day=today.day)
+            published_at_date = False
 
         elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
             # Advertisement published on a specific date => parse day, month & year
@@ -94,6 +95,7 @@ class OLXClient(BaseClient):
             year = int(match.group("year"))
             month = _MONTHS[match.group("month").lower()]
             published_at = datetime(year=year, month=month, day=day)
+            published_at_date = True
 
         else:
             # Unknown date format
@@ -103,6 +105,7 @@ class OLXClient(BaseClient):
             "id": advertisement_id,
             "url": url,
             "published_at": published_at,
+            "published_at_date": published_at_date,
             "is_promoted": is_promoted,
         }
 
@@ -240,6 +243,7 @@ class OLXClient(BaseClient):
             id=item["id"],
             url=item["url"],
             published_at=item["published_at"],
+            published_at_date=item["published_at_date"],
             source=cls.name,
 
             # Price
