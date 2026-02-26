@@ -35,15 +35,16 @@ class OLXAPIClient(BaseClient):
             },
         }
 
-    async def request_json(self, method: str, url: str, **kwargs) -> dict:
+    async def request_json(self, method: str, url: str, ignore_auth: bool = False, **kwargs) -> dict:
         """
         Perform a request with given parameters and authorization.
         Returns JSON response.
         """
 
-        # Set authorization header with access token
-        kwargs.setdefault("headers", {})
-        kwargs["headers"]["Authorization"] = f"Bearer {await self.access_token}"
+        if not ignore_auth:
+            # Set authorization header with access token
+            kwargs.setdefault("headers", {})
+            kwargs["headers"]["Authorization"] = f"Bearer {await self.access_token}"
 
         return await super().request_json(
             method=method,
@@ -100,6 +101,7 @@ class OLXAPIClient(BaseClient):
                 "client_id": self.config.client_id,
                 "client_secret": self.config.client_secret,
             },
+            ignore_auth=True,
         )
 
         # Update tokens
