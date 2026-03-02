@@ -14,6 +14,7 @@ class MenuAction(StrEnum):
     MY_LINKS = "🔗 Мої оголошення — список"
     ALL_COUNTS = "📊 Всі співробітники — кількість"
     ALL_LINKS = "🔗 Всі співробітники — список"
+    FIRST_SCRAPED = "📥 Перше оголошення з файлу"
     MENU = "🏠 Головне меню"
 
 
@@ -29,6 +30,7 @@ def main_menu(role: Role) -> ReplyKeyboardMarkup:
         [
             KeyboardButton(text=MenuAction.MY_COUNTS.value),
             KeyboardButton(text=MenuAction.MY_LINKS.value),
+            KeyboardButton(text=MenuAction.FIRST_SCRAPED.value),
         ],
     ]
 
