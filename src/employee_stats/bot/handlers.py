@@ -1,17 +1,26 @@
+import logging
+
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from src.employee_stats.bot.menu import MenuAction, main_menu
-from src.employee_stats.bot.utils import no_access_text, send_menu, with_progress
+from src.employee_stats.bot.utils import (
+    no_access_text,
+    send_menu,
+    with_progress,
+)
 from src.employee_stats.config.access import Role, resolve
 from src.employee_stats.presenter.text import (
     build_all_counts,
     build_all_links_messages,
-    build_my_counts,
-    build_my_links,
+    build_my_counts, build_my_links,
 )
 
+# Defined logger
+logger = logging.getLogger(__name__)
+
+# Defined router
 router = Router()
 
 
@@ -26,6 +35,13 @@ async def start(message: Message) -> None:
     if profile is None:
         await message.answer(no_access_text())
         return
+
+    logger.info(
+        "START | user_id=%s | name=%s | role=%s",
+        message.from_user.id,
+        profile.name,
+        profile.role,
+    )
 
     role_label = "Адміністратор" if profile.role == Role.ADMIN else "Співробітник"
     greeting_text = (
@@ -53,6 +69,14 @@ async def on_text(message: Message) -> None:
     role = profile.role
     phone = profile.phone
     text_in = (message.text or "").strip()
+
+    logger.info(
+        "ACTION | user_id=%s | name=%s | role=%s | action=%s",
+        message.from_user.id,
+        profile.name,
+        profile.role,
+        text_in,
+    )
 
     match text_in:
         case MenuAction.MENU.value:

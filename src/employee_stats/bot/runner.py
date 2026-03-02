@@ -6,6 +6,11 @@ from aiogram.client.default import DefaultBotProperties
 from src.config import config
 from src.employee_stats.bot.handlers import router
 
+from src.employee_stats.bot.logging import setup_logging
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def build_bot() -> Bot:
     """
@@ -25,6 +30,9 @@ async def main() -> None:
     """
     Entry point: register router and start polling.
     """
+
+    setup_logging()
+    logger.info("🚀 Starting Telegram bot...")
 
     bot = build_bot()
     dp = Dispatcher()
