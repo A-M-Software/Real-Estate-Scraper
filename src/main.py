@@ -3,11 +3,9 @@
 from datetime import datetime
 
 from .clients import ALL_CLIENTS
-from .advertisment import Advertisement
+from .advertisment import Advertisement, save_advertisements
 from .telegram import send_advertisements
 from .logger import base_logger as logger
-import json
-from pathlib import Path
 
 
 async def scrap_advertisements(after_date: datetime | None = None) -> None:
@@ -38,26 +36,8 @@ async def scrap_advertisements(after_date: datetime | None = None) -> None:
     # Sort by published date
     advertisements.sort(key=lambda adv: adv.published_at)
 
-    # Sort by published date
-    advertisements.sort(key=lambda adv: adv.published_at)
-
-    # ---- Dump to JSON ----
-    output_path = Path("/data/advertisements.json")
-
-    data = [
-        {
-            "id": adv.id,
-            "source": adv.source,
-            "title": adv.street,
-            "price": adv.price,
-            "url": adv.url,
-            "published_at": adv.published_at.isoformat() if adv.published_at else None,
-        }
-        for adv in advertisements
-    ]
-
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    # Save collected advertisements to the file
+    save_advertisements(advertisements=advertisements)
 
     # Send collected advertisements to Telegram
     await send_advertisements(advertisements=advertisements)

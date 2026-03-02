@@ -1,13 +1,15 @@
 # coding=utf-8
 
 import re
+from json import load, dump
 from datetime import datetime
-from dataclasses import dataclass
 from locale import setlocale, LC_TIME
+from dataclasses import dataclass, asdict
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from .logger import base_logger as logger
+from .config import config
 
 
 _MAX_DESC_LENGTH = 512  # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
@@ -198,3 +200,27 @@ class Advertisement:
                 return True
 
         return False
+
+
+def save_advertisements(advertisements: list[Advertisement]) -> None:
+    """
+    Save collected advertisements to a file (for future use)
+    """
+
+    if not config.advertisements_file.parent.exists():
+        # Create parent directory if it doesn't exist
+        config.advertisements_file.parent.mkdir(parents=True, exist_ok=True)
+
+    data = []
+
+    if config.advertisements_file.exists():
+        with config.advertisements_file.open("r") as file:
+            # Load existing data if file exists
+            data = load(file)
+
+    # Add new advertisements to existing data
+    data.extend(list(map(asdict, advertisements)))
+
+    with config.advertisements_file.open("w") as file:
+        # Save updated data to file
+        dump(data, file, default=str, ensure_ascii=False, indent=2)

@@ -83,6 +83,9 @@ class Config(BaseSettings):
     bot: BotConfig = Field(default=BotConfig)
     log: LogConfig = Field(default_factory=LogConfig)
 
+    # Other settings
+    advertisements_file: Path
+
 
 # Load config
 config = Config()

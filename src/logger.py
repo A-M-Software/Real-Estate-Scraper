@@ -42,7 +42,7 @@ def setup_logger(
 
 # Setup basic logging for libraries
 logging.basicConfig(
-    level=config.log.level,
+    level="INFO",
     format=LOG_FORMAT,
     handlers=[logging.StreamHandler()] if config.log.echo else [],
 )
