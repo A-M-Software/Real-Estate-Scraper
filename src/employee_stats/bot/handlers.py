@@ -1,5 +1,3 @@
-import logging
-
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
@@ -16,9 +14,8 @@ from src.employee_stats.presenter.text import (
     build_all_links_messages,
     build_my_counts, build_my_links,
 )
+from src.logger import bot_logger as logger
 
-# Defined logger
-logger = logging.getLogger(__name__)
 
 # Defined router
 router = Router()
@@ -32,16 +29,15 @@ async def start(message: Message) -> None:
 
     profile = resolve(message.from_user.id)
 
+    logger.info(f"/start command received from user_id={message.from_user.id} (chat_id={message.chat.id})")
+
     if profile is None:
+        # Unknown user
+        logger.warning(f"User is not recognized, ignoring")
         await message.answer(no_access_text())
         return
 
-    logger.info(
-        "START | user_id=%s | name=%s | role=%s",
-        message.from_user.id,
-        profile.name,
-        profile.role,
-    )
+    logger.info(f"User {profile.name} ({profile.role}) recognized")
 
     role_label = "Адміністратор" if profile.role == Role.ADMIN else "Співробітник"
     greeting_text = (

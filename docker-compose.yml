@@ -1,31 +1,25 @@
 version: "3.9"
 
-volumes:
-  shared_data:
-  scraper_logs:
 
 services:
   scraper:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Scraper.Dockerfile
     container_name: real-estate-scraper
-    env_file:
-      - .env
+    restart: always
+
     volumes:
-      - shared_data:/data
-      - scraper_logs:/logs
-    restart: "no"
-    command: [ "python3", "run.py" ]
+      - ./logs:/logs
+      - ./data:/data
 
   bot:
     build:
       context: .
-      dockerfile: Dockerfile.bot.dockerfile
+      dockerfile: Bot.Dockerfile
     container_name: real-estate-bot
-    env_file:
-      - .env
-    volumes:
-      - shared_data:/data
     restart: always
-    command: [ "python", "-m", "src.employee_stats.bot.runner" ]
+
+    volumes:
+      - ./logs:/logs
+      - ./data:/data

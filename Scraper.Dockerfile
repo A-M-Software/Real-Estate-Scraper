@@ -14,12 +14,8 @@ ENV LC_TIME uk_UA.UTF-8
 # Define work directory
 WORKDIR /
 
-# Set volumes for logs & data
-VOLUME /logs
-VOLUME /data
-
 # Copy requirements
-COPY requirements.txt requirements.txt
+COPY requirements.txt .
 
 # Update pip & install dependencies
 RUN python3 -m pip install --upgrade pip

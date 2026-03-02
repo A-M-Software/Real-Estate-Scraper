@@ -30,7 +30,7 @@ def main_menu(role: Role) -> ReplyKeyboardMarkup:
         [
             KeyboardButton(text=MenuAction.MY_COUNTS.value),
             KeyboardButton(text=MenuAction.MY_LINKS.value),
-            KeyboardButton(text=MenuAction.FIRST_SCRAPED.value),
+            # KeyboardButton(text=MenuAction.FIRST_SCRAPED.value),
         ],
     ]
 

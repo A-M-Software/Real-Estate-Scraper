@@ -1,10 +1,8 @@
 import json
-from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+from dataclasses import dataclass
 
-# Path to a local, non-versioned access list (keep it out of Git)
-EMPLOYEES_FILE = Path(__file__).parent / "employees.json"
+from src.config import config
 
 
 class Role(StrEnum):
@@ -37,7 +35,7 @@ def _load() -> tuple[set[int], dict[int, dict[str, str]]]:
     """
 
     # Defined some values
-    raw_data = json.loads(EMPLOYEES_FILE.read_text(encoding="utf-8"))
+    raw_data = json.loads(config.bot.employees_file.read_text(encoding="utf-8"))
     admin_ids = {int(user_id) for user_id in raw_data.get("admins", [])}
     employees_raw: dict[str, dict[str, str]] = raw_data.get("employees", {})
     employees_by_id = {int(tg_id): data for tg_id, data in employees_raw.items()}
@@ -56,7 +54,7 @@ def resolve(tg_user_id: int) -> Profile | None:
         Profile if the user exists in EMPLOYEES_FILE, otherwise None.
     """
 
-    if not EMPLOYEES_FILE.exists():
+    if not config.bot.employees_file.exists():
         return None
 
     admin_ids, employees_by_id = _load()
@@ -76,7 +74,7 @@ def phone_to_name() -> dict[str, str]:
     Useful for "all" reports where adverts are grouped by phone.
     """
 
-    if not EMPLOYEES_FILE.exists():
+    if not config.bot.employees_file.exists():
         return {}
 
     _admin_ids, employees_by_id = _load()

@@ -43,6 +43,15 @@ class TelegramConfig(BaseModel):
     chat_id: str
 
 
+class BotConfig(BaseModel):
+    """
+    Configuration for the bot's behavior, such as polling intervals and retry settings.
+    """
+
+    employees_file: Path
+
+
+
 class LogConfig(BaseModel):
     """
     Configuration for logging, including log level and file path.
@@ -71,6 +80,7 @@ class Config(BaseSettings):
     dim_ria: DimRiaConfig = Field(default_factory=DimRiaConfig)
     olx: OLXConfig = Field(default_factory=OLXConfig)
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
+    bot: BotConfig = Field(default=BotConfig)
     log: LogConfig = Field(default_factory=LogConfig)
 
 
