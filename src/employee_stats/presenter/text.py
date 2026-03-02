@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 from html import escape
 from typing import Any
 
-from src.employee_stats.access import phone_to_name
-from src.employee_stats.domain import calc_counts, get_active_cached, group_by_phone
+from src.employee_stats.config.access import phone_to_name
+from src.employee_stats.domain.adverts import get_active_cached
+from src.employee_stats.domain.grouping import group_by_phone
+from src.employee_stats.domain.counters import calc_counts
 
 
 def _is_sale(advert: dict[str, Any]) -> bool:

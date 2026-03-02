@@ -2,7 +2,7 @@ from enum import StrEnum
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-from src.employee_stats.access import Role
+from src.employee_stats.config.access import Role
 
 
 class MenuAction(StrEnum):

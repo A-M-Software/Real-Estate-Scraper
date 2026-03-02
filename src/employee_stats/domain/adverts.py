@@ -1,29 +1,10 @@
 import time
-from dataclasses import dataclass
 from typing import Any
 
 from src.clients import OLXAPIClient
 
 _cache_ts: float = 0.0
 _cache_active: list[dict[str, Any]] | None = None
-
-
-@dataclass(frozen=True)
-class Counts:
-    """
-    Aggregated counts of active adverts by type.
-    """
-
-    sale: int
-    rent: int
-
-    @property
-    def total(self) -> int:
-        """
-        Total number of adverts (sale + rent).
-        """
-
-        return self.sale + self.rent
 
 
 async def fetch_all_adverts() -> list[dict[str, Any]]:
@@ -67,39 +48,6 @@ def only_active(adverts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
 
     return [advert for advert in adverts if advert.get("status") == "active"]
-
-
-def group_by_phone(adverts: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
-    """
-    Group adverts by normalized phone number.
-
-    Notes:
-        Phone is taken from advert["contact"]["phone"] and normalized by removing spaces.
-    """
-
-    # Set default value
-    grouped: dict[str, list[dict[str, Any]]] = {}
-
-    for advert in adverts:
-        phone_raw = advert["contact"]["phone"]
-        phone = "".join(str(phone_raw).split())  # Normalize phone
-        grouped.setdefault(phone, []).append(advert)
-
-    return grouped
-
-
-def calc_counts(adverts: list[dict[str, Any]]) -> Counts:
-    """
-    Calculate sale/rent counts for a list of adverts.
-
-    Sale is determined by SALE_CATEGORY_ID.
-    Everything else is treated as rent.
-    """
-
-    sale_count = sum(1 for advert in adverts if advert.get("category_id") == 1758)
-    rent_count = len(adverts) - sale_count
-
-    return Counts(sale=sale_count, rent=rent_count)
 
 
 async def get_active_cached() -> list[dict[str, Any]]:
