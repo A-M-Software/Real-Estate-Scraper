@@ -213,3 +213,5 @@ logs/
 
 # Data files
 **/*.pkl
+
+src/employee_stats/employees.json
