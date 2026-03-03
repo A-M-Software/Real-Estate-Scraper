@@ -138,7 +138,7 @@ class OLXClient(BaseClient):
                 # Parse advertisement's details
                 item = self._parse_searched_advertisement(advertisement)
 
-            except (ValueError, Exception) as error:
+            except (ValueError, Exception):
                 # Failed to parse
                 self.logger.error(
                     f"({index}/{len(advertisements)}) "
@@ -289,6 +289,10 @@ class OLXClient(BaseClient):
                 self.logger.info(f"Found an ID posted before '{after_date}', stop loading more")
                 break
 
+        # Limit to only new advertisements
+        self.logger.info(f"Limiting to {index} new advertisement(s) (excluding existing and old ones)")
+        data = data[:index]
+
         for duplicate_index, duplicate_item in reversed(list(enumerate(data))):
             for check_index, check_item in enumerate(data[:duplicate_index]):
                 if duplicate_item["id"] == check_item["id"]:
@@ -297,8 +301,6 @@ class OLXClient(BaseClient):
                     data.pop(duplicate_index)
                     break
 
-        # Limit to only new advertisements
-        data = data[:index]
         self.logger.info(f"Loading info for {len(data)} advertisement(s)")
 
         for index, item in enumerate(data, start=1):
