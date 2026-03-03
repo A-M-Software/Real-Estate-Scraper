@@ -1,28 +1,28 @@
-# syntax=docker/dockerfile:1
-FROM python:3.14.0
+# Use Alpine Linux as base image
+FROM alpine:latest
 
-# Install ukrainian locale
-RUN apt-get update && \
-    apt-get install -y locales && \
-    sed -i -e 's/# uk_UA UTF-8/uk_UA UTF-8/' /etc/locale.gen && \
-    dpkg-reconfigure --frontend=noninteractive locales
+# Install Python
+RUN apk add --update --no-cache python3 py3-pip
+RUN python3 -m pip install --no-cache --break-system-packages --upgrade pip setuptools
 
-ENV LANG uk_UA.UTF-8
-ENV LC_ALL uk_UA.UTF-8
-ENV LC_TIME uk_UA.UTF-8
+# Install supercronic - a cron replacement designed for containers
+# Using build arguments allows easy version updates and multi-architecture support
+ARG SUPERCRONIC_VERSION=0.2.43
+ARG TARGETARCH
+# Download the supercronic binary for the target architecture and make it executable
+RUN wget -q "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH}" -O /usr/local/bin/supercronic && chmod +x /usr/local/bin/supercronic
 
-# Define work directory
-WORKDIR /
-
-# Copy requirements
+# Copy the requirements file and install Python dependencies
 COPY requirements.txt .
 
-# Update pip & install dependencies
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install -r requirements.txt
+# Install dependencies
+RUN python3 -m pip install --break-system-packages -r requirements.txt
 
-# Copy all other files
+# Copy the crontab into place
+COPY crontab /etc/crontab
+
+# Copy other files
 COPY . .
 
-# Run the script
-CMD ["python3", "run.py"]
+# Run cron, and tail the primary cron log
+CMD ["supercronic", "/etc/crontab"]
