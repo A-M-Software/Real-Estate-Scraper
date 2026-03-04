@@ -11,8 +11,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from .logger import base_logger as logger
 from .config import config
 
-
-_MAX_DESC_LENGTH = 512  # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
+# Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
+_MAX_DESC_LENGTH = 512
 
 
 @dataclass
@@ -149,14 +149,19 @@ class Advertisement:
         Get URL button markup for Telegram message if URL is available
         """
 
+        # Set default value
+        result = None
+
         if self.url:
-            return InlineKeyboardMarkup(
+            result = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(text=f"Переглянути на {self.source}", url=self.url)
                     ],
                 ]
             )
+
+        return result
 
     @property
     def brokers_forbidden(self) -> bool:

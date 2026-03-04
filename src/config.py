@@ -51,7 +51,6 @@ class BotConfig(BaseModel):
     employees_file: Path
 
 
-
 class LogConfig(BaseModel):
     """
     Configuration for logging, including log level and file path.

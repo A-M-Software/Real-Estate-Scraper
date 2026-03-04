@@ -4,3 +4,4 @@ Lxml
 HttpX
 Pydantic
 Pydantic-Settings
+Reportlab
