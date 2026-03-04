@@ -168,7 +168,7 @@ class Advertisement:
         # Prepare regex phrases
         brokers_re = (
             r"(р[іи][єе]лт[оеа]ра?м?и?ы?"
-            r"|посе?редника?м?и?)"
+            r"|посе?редника?м?и?і?в?)"
         )
         please_re = (
             r"(прошу"
