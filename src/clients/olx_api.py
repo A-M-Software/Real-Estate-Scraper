@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .base import BaseClient
 from ..advertisment import Advertisement
@@ -60,6 +60,10 @@ class OLXAPIClient(BaseClient):
 
         if access_token := self.data.get("access_token"):
             if expires_at := self.data.get("access_token_expires_at"):
+                if expires_at.tzinfo is None:
+                    # Assume that it's a UTC
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+
                 if expires_at > datetime.now(tz=config.tz):
                     # Valid access token exists, return it
                     return access_token
