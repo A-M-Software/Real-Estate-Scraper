@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from src.config import config
 from .text import safe_str
 
 
@@ -55,7 +56,7 @@ def parse_published_dt(value: Any) -> datetime | None:
 
     try:
         # Load from ISO format
-        return datetime.fromisoformat(value)
+        return datetime.fromisoformat(value).astimezone(config.tz)
 
     except ValueError:
         # Unable to parse as ISO
