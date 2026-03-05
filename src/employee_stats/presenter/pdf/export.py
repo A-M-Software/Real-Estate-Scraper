@@ -82,6 +82,8 @@ def export_advertisements_pdf(
         street = safe_str(ad.get("street"))
         rooms = safe_str(ad.get("rooms"))
         area = ad.get("area")
+        floor = ad.get("floor")
+        total_floors = ad.get("total_floors")
 
         description = safe_str(ad.get("description"))
         published_at = safe_str(ad.get("published_at"))
@@ -153,6 +155,9 @@ def export_advertisements_pdf(
             details.append(f"Площа: {area_str} м²")
         if per_sqm:
             details.append(f"Ціна за м²: {per_sqm}")
+
+        if floor or total_floors:
+            details.append(f"Поверх: {floor or '?'}" + (f"/{total_floors}" if total_floors else ""))
 
         if details:
             c.drawString(layout.left, y, " • ".join(details))
