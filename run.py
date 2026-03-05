@@ -1,9 +1,9 @@
 # coding=utf-8
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import asyncio
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 from src.config import config
@@ -22,19 +22,27 @@ class Settings(BaseSettings, cli_parse_args=True):
             "If timezone is not explicitly set, treating it as the configured timezone."
         ),
     )
+    days: int | None = Field(
+        default=None,
+        description=(
+            "only scrape advertisements published in the last N days. "
+            "This parameter is ignored if 'after_date' is set."
+        ),
+    )
 
-    @field_validator("after_date")
-    @classmethod
-    def set_timezone(cls, after_date: datetime | None):
+    def model_post_init(self, _, /) -> None:
         """
-        Set timezone for 'after_date'.
+        Prepare 'after_date' parameter.
         """
 
-        if after_date and after_date.tzinfo is None:
-            # Convert from UTC to configured timezone
-            after_date = after_date.astimezone(tz=config.tz)
+        if self.after_date is None:
+            if self.days is not None:
+                # Calculate 'after_date' based on 'days'
+                self.after_date = datetime.now(tz=config.tz) - timedelta(days=self.days)
 
-        return after_date
+        elif self.after_date.tzinfo is None:
+            # Convert to configured timezone
+            self.after_date = self.after_date.astimezone(tz=config.tz)
 
 
 if __name__ == "__main__":
