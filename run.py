@@ -29,6 +29,10 @@ class Settings(BaseSettings, cli_parse_args=True):
             "This parameter is ignored if 'after_date' is set."
         ),
     )
+    ignore_existing: bool = Field(
+        default=False,
+        description="do not skip advertisements that were already collected before",
+    )
 
     def model_post_init(self, _, /) -> None:
         """
@@ -53,5 +57,6 @@ if __name__ == "__main__":
     asyncio.run(
         scrap_advertisements(
             after_date=settings.after_date,
+            ignore_existing=settings.ignore_existing,
         )
     )

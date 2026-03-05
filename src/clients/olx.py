@@ -281,7 +281,11 @@ class OLXClient(BaseClient):
             photo_url=photo_url,
         )
 
-    async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
+    async def get_latest_advertisements(
+            self,
+            after_date: datetime | None = None,
+            ignore_existing: bool = False,
+    ) -> list[Advertisement]:
         """
         Get advertisements from the OLX.
         """
@@ -305,7 +309,7 @@ class OLXClient(BaseClient):
         index = 0
 
         for index, item in enumerate(data):
-            if item["id"] in existing_ids:
+            if item["id"] in existing_ids and not ignore_existing:
                 # Found an existing advertisement, stop loading more
                 self.logger.info(f"Found an existing ID={item['id']}, stop loading more")
                 break

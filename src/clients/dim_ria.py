@@ -175,7 +175,11 @@ class DimRiaClient(BaseClient):
         # All IDs before the first posted earlier than the specified date
         return advertisement_ids[:right], checked
 
-    async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
+    async def get_latest_advertisements(
+            self,
+            after_date: datetime | None = None,
+            ignore_existing: bool = False,
+    ) -> list[Advertisement]:
         """
         Get latest advertisements from the Dim.Ria.
         Using data files, check for already processed advertisements, and return only new ones.
@@ -204,7 +208,7 @@ class DimRiaClient(BaseClient):
             },
         }
 
-        if existing_ids:
+        if existing_ids and not ignore_existing:
             # Process advertisements only before any of existing IDs
             self.logger.info(f"Using {len(existing_ids)} existing IDs to filter advertisements")
 
@@ -227,7 +231,7 @@ class DimRiaClient(BaseClient):
 
             if ids := data.get("items"):
                 # Process IDs based on parameters
-                if existing_ids:
+                if existing_ids and not ignore_existing:
                     # Add IDs until found
                     found = False
 

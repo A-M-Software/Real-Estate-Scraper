@@ -162,7 +162,11 @@ class BaseClient(AsyncClient, ABC):
         ).text
 
     @abstractmethod
-    async def get_latest_advertisements(self, after_date: datetime | None = None) -> list[Advertisement]:
+    async def get_latest_advertisements(
+            self,
+            after_date: datetime | None = None,
+            ignore_existing: bool = False,
+    ) -> list[Advertisement]:
         """
         Get advertisements from the source.
         """
