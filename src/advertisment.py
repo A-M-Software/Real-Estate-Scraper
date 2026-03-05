@@ -23,6 +23,8 @@ class Advertisement:
     building_name: str | None
     rooms: int | str
     area: int  # Square meters
+    floor: int | None
+    total_floors: int | None
     description: str
 
     # Basic info
@@ -75,6 +77,14 @@ class Advertisement:
 
             if self.area:
                 texts.append(f"{self.area}м²")
+
+            if self.total_floors:
+                # Display both floor and total floors
+                texts.append(f"поверх {self.floor or '?'}/{self.total_floors}")
+
+            elif self.floor is not None:
+                # Only floor is available
+                texts.append(f"поверх {self.floor}")
 
             text += ", ".join(texts) + "\n"
 

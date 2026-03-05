@@ -102,6 +102,8 @@ class DimRiaClient(BaseClient):
             building_name=data.get("user_newbuild_name_uk"),
             rooms=data.get("rooms_count"),
             area=data.get("total_square_meters"),
+            floor=data.get("floor"),
+            total_floors=data.get("floors_count"),
             description=" ".join(data["description_uk"].split()) if data.get("description_uk") else "",
 
             # Basic info

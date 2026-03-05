@@ -219,6 +219,14 @@ class OLXClient(BaseClient):
             # Get only number
             area = int(float(area.split()[0]))
 
+        if floor := get_property("Поверх"):
+            # Convert to number
+            floor = int(floor)
+
+        if total_floors := get_property("Поверховість"):
+            # Convert to number
+            total_floors = int(total_floors)
+
         # Description
         description = "\n".join(map(clean, main.xpath(".//div[@data-testid=\"ad_description\"]//div/text()")))
 
@@ -237,6 +245,8 @@ class OLXClient(BaseClient):
             building_name=building_name,  # Already cleaned in property
             rooms=rooms,
             area=area,
+            floor=floor,
+            total_floors=total_floors,
             description=description,  # Already cleaned
 
             # Basic info
