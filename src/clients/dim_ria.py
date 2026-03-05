@@ -121,6 +121,9 @@ class DimRiaClient(BaseClient):
 
             # Images
             photo_url=(cls.cdn_url + data["main_photo"].replace(".jpg", "xl.jpg")) if data.get("main_photo") else None,
+
+            # Internal
+            data=data,  # Save raw data for possible future use
         )
 
     async def _find_published_after(

@@ -43,6 +43,9 @@ class Advertisement:
     # Images
     photo_url: str | None = None
 
+    # Internal
+    data: dict | str | None = None
+
     @property
     def formatted_text(self) -> str:
         """

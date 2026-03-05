@@ -280,6 +280,9 @@ class OLXClient(BaseClient):
 
             # Images
             photo_url=photo_url,
+
+            # Internal
+            data=text,
         )
 
     async def get_latest_advertisements(
