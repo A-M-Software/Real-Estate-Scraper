@@ -3,7 +3,7 @@
 import re
 from lxml import html
 
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from .base import BaseClient
 from ..advertisment import Advertisement
@@ -61,6 +61,7 @@ class OLXClient(BaseClient):
 
         # Prepare variables
         today = date.today()
+        tz = timezone.utc  # Page is loaded in UTC timezone (and converted to local on front-end), so we have UTC here
 
         # Parse advertisement's details
         advertisement_id, = advertisement.xpath("@id")  # type: str
@@ -86,7 +87,7 @@ class OLXClient(BaseClient):
             # Advertisement published today => parse hour & minute
             time_str = match.group("time")
             published_at = datetime.strptime(time_str, "%H:%M")
-            published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=config.tz)
+            published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=tz)
             published_at_date = False
 
         elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
@@ -94,7 +95,7 @@ class OLXClient(BaseClient):
             day = int(match.group("day"))
             year = int(match.group("year"))
             month = _MONTHS[match.group("month").lower()]
-            published_at = datetime(year=year, month=month, day=day, tzinfo=config.tz)
+            published_at = datetime(year=year, month=month, day=day, tzinfo=tz)
             published_at_date = True
 
         else:

@@ -130,11 +130,11 @@ class Advertisement:
 
             if self.published_at_date:
                 # No time information, only date
-                text += self.published_at.strftime("%d %B (%A)") + "\n"
+                text += self.published_at.astimezone(config.tz).strftime("%d %B (%A)") + "\n"
 
             else:
                 # Date and time information available
-                text += self.published_at.strftime("%d %B (%A), %H:%M") + "\n"
+                text += self.published_at.astimezone(config.tz).strftime("%d %B (%A), %H:%M") + "\n"
 
         # Broker forbidden
 

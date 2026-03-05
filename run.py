@@ -51,7 +51,7 @@ class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
 
         elif self.after_date.tzinfo is None:
             # Convert to configured timezone
-            self.after_date = self.after_date.astimezone(tz=config.tz)
+            self.after_date = self.after_date.replace(tzinfo=config.tz)
 
 
 if __name__ == "__main__":
