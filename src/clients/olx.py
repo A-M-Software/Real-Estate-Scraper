@@ -185,6 +185,18 @@ class OLXClient(BaseClient):
                     # Found property => get value
                     return property_.split(name + ": ")[-1]
 
+        def check_property(name: str) -> bool:
+            """
+            Check if property with given name exists
+            """
+
+            for property_ in properties:
+                if name in property_.split(":")[0]:
+                    # Found property => return True
+                    return True
+
+            return False
+
         def clean(value: str) -> str | None:
             """
             Removes extra spaces from the value (if it's not None).
@@ -227,6 +239,9 @@ class OLXClient(BaseClient):
             # Convert to number
             total_floors = int(total_floors)
 
+        # Check if marked as allowed
+        brokers_allowed = check_property("Готовий співпрацювати з ріелторами")
+
         # Description
         description = "\n".join(map(clean, main.xpath(".//div[@data-testid=\"ad_description\"]//div/text()")))
 
@@ -255,6 +270,7 @@ class OLXClient(BaseClient):
             published_at=item["published_at"],
             published_at_date=item["published_at_date"],
             source=cls.name,
+            brokers_allowed=brokers_allowed,
 
             # Price
             price=price,

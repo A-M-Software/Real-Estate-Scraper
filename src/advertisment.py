@@ -33,6 +33,7 @@ class Advertisement:
     published_at: datetime
     published_at_date: bool  # True if published_at contains only date information without time
     source: str
+    brokers_allowed: bool
 
     # Price
     price: float
@@ -137,7 +138,12 @@ class Advertisement:
 
         # Broker forbidden
 
-        if self.brokers_forbidden:
+        if self.brokers_allowed:
+            # Marked as allowed
+            text += "✅ Готовий співпрацювати з посередниками\n"
+
+        elif self.brokers_forbidden:
+            # Found words indicating that brokers are forbidden
             text += "🚫 Посередникам не турбувати\n"
 
         # Description

@@ -112,6 +112,7 @@ class DimRiaClient(BaseClient):
             published_at=datetime.fromtimestamp(data["publishing_date_ts"]),
             published_at_date=False,  # Not only date but time as well
             source=cls.name,
+            brokers_allowed=False,  # Can't check
 
             # Price
             price=data.get("price"),
