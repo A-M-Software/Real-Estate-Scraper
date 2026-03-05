@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from .clients import ALL_CLIENTS
+from .clients import ALL_CLIENTS, ClientName
 from .advertisment import Advertisement, save_advertisements
 from .telegram import send_advertisements
 from .logger import base_logger as logger
@@ -11,6 +11,7 @@ from .logger import base_logger as logger
 async def scrap_advertisements(
         after_date: datetime | None = None,
         ignore_existing: bool = False,
+        only: list[ClientName] | None = None,
 ) -> None:
     """
     Collect advertisements from all sources.
@@ -19,6 +20,10 @@ async def scrap_advertisements(
     advertisements: list[Advertisement] = []
 
     for Client in ALL_CLIENTS:
+        if only is not None and Client.name not in only:
+            # Ignore this client
+            continue
+
         try:
             # Iterate each client
             logger.info(f"Collecting advertisements from {Client.__name__} ({after_date=}, {ignore_existing=})")

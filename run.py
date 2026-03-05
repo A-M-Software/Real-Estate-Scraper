@@ -4,13 +4,14 @@ from datetime import datetime, timedelta
 
 import asyncio
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, CliImplicitFlag
 
 from src.config import config
+from src.clients import ClientName
 from src.main import scrap_advertisements
 
 
-class Settings(BaseSettings, cli_parse_args=True):
+class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
     """
     CLI arguments for the script.
     """
@@ -29,9 +30,13 @@ class Settings(BaseSettings, cli_parse_args=True):
             "This parameter is ignored if 'after_date' is set."
         ),
     )
-    ignore_existing: bool = Field(
+    ignore_existing: CliImplicitFlag[bool] = Field(
         default=False,
         description="do not skip advertisements that were already collected before",
+    )
+    only: list[ClientName] | None = Field(
+        default=None,
+        description="Collect advertisements only from these sources. If not set, collect from all.",
     )
 
     def model_post_init(self, _, /) -> None:
@@ -58,5 +63,6 @@ if __name__ == "__main__":
         scrap_advertisements(
             after_date=settings.after_date,
             ignore_existing=settings.ignore_existing,
+            only=settings.only,
         )
     )
