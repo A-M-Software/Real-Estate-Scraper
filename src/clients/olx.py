@@ -86,7 +86,7 @@ class OLXClient(BaseClient):
             # Advertisement published today => parse hour & minute
             time_str = match.group("time")
             published_at = datetime.strptime(time_str, "%H:%M")
-            published_at = published_at.replace(year=today.year, month=today.month, day=today.day)
+            published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=config.tz)
             published_at_date = False
 
         elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
