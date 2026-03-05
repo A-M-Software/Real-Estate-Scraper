@@ -49,17 +49,17 @@ def parse_published_dt(value: Any) -> datetime | None:
     Parse published_at value into datetime if possible.
     """
 
-    s = safe_str(value)
-    if not s:
+    if not (value := safe_str(value)):
+        # No value or empty string
         return None
 
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(s, fmt)
-        except ValueError:
-            continue
+    try:
+        # Load from ISO format
+        return datetime.fromisoformat(value)
 
-    return None
+    except ValueError:
+        # Unable to parse as ISO
+        return None
 
 
 def filter_ads(
