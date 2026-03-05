@@ -1,6 +1,9 @@
 # Use Alpine Linux as base image
 FROM alpine:latest
 
+# Install timezones & TODO: locales
+RUN apk add --update --no-cache tzdata
+
 # Install Python
 RUN apk add --update --no-cache python3 py3-pip
 RUN python3 -m pip install --no-cache --break-system-packages --upgrade pip setuptools
