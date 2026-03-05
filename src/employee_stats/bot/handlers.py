@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import tempfile
-from datetime import datetime, time, date, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from aiogram import Router
+from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile, Message
-from aiogram.dispatcher.event.bases import SkipHandler
 
 from src.config import config
 from src.employee_stats.bot.menu import (
@@ -39,10 +41,11 @@ router = Router()
 @router.message(CommandStart())
 async def start(message: Message) -> None:
     """
-    Entry point for the bot.
+    Bot entry point.
 
-    Greets the user and shows the root menu
-    if the user has access to the system.
+    - Validates user access.
+    - Resets active menu to ROOT.
+    - Shows the root keyboard (sections).
     """
 
     profile = resolve(message.from_user.id)
@@ -75,16 +78,18 @@ async def start(message: Message) -> None:
 @router.message()
 async def on_text(message: Message, state: FSMContext) -> None:
     """
-    Handle all text messages from the user.
+    Main text handler (non-FSM).
 
-    Responsible for:
-    - menu navigation
-    - triggering OLX actions
-    - generating PDF reports
+    Handles:
+    - global navigation between sections (ROOT / OLX / REPORTS)
+    - OLX submenu actions
+    - Reports actions that do not require extra user input
+
+    If FSM is active (date input flow), this handler is skipped
+    and FSM-specific handlers take over.
     """
 
-    # If FSM is active (user entering dates) —
-    # let FSM handlers process the message
+    # If user is in date input flow, do not handle here.
     if await state.get_state() is not None:
         raise SkipHandler
 
@@ -109,9 +114,8 @@ async def on_text(message: Message, state: FSMContext) -> None:
         text_in,
     )
 
-    # GLOBAL NAVIGATION (works from any menu)
+    # Global navigation (works from any menu)
     match text_in:
-
         case MenuSection.OLX.value:
             ACTIVE_MENU_BY_USER[user_id] = ActiveMenu.OLX
             await message.answer("🏠 Оголошення OLX", reply_markup=olx_menu(role))
@@ -133,8 +137,10 @@ async def on_text(message: Message, state: FSMContext) -> None:
         case _:
             pass
 
-    # SECTION: OLX
     match current_menu:
+        # -------------------------
+        # SECTION: OLX
+        # -------------------------
         case ActiveMenu.OLX:
             match text_in:
                 case OlxAction.MY_COUNTS.value:
@@ -171,14 +177,17 @@ async def on_text(message: Message, state: FSMContext) -> None:
                         reply_markup=olx_menu(role),
                     )
 
+                case _:
+                    await message.answer("Оберіть дію 👇", reply_markup=olx_menu(role))
+
+        # -------------------------
         # SECTION: REPORTS
+        # -------------------------
         case ActiveMenu.REPORTS:
             match text_in:
-                # Generate report for ALL advertisements
+                # Report: ALL ads
                 case ReportsAction.ALL.value:
-
                     with tempfile.TemporaryDirectory() as tmp_dir:
-
                         pdf_path = export_advertisements_pdf(
                             json_path=config.advertisements_file,
                             out_dir=Path(tmp_dir),
@@ -190,28 +199,26 @@ async def on_text(message: Message, state: FSMContext) -> None:
                             reply_markup=reports_menu(role),
                         )
 
-                # Ask user for date range
+                # Report: custom date range (FSM)
                 case ReportsAction.RANGE.value:
-
                     await state.clear()
                     await state.set_state(ReportsRangeState.date_from)
 
                     await message.answer(
                         "Введіть дату <b>ВІД</b> у форматі <code>YYYY-MM-DD</code>\n"
                         "Приклад: <code>2026-02-01</code>\n\n"
-                        "Щоб пропустити мінімальну дату — надішліть <code>-</code>",
+                        "Щоб пропустити мінімальну дату — надішліть <code>-</code>\n"
+                        "Щоб вийти — натисніть <b>⬅️ Назад</b>",
                         reply_markup=reports_menu(role),
                     )
 
-                # Generate report for last 7 days
+                # Report: last 7 days
                 case ReportsAction.LAST_7_DAYS.value:
-
                     now = datetime.now(tz=config.tz)
                     range_start = now - timedelta(days=7)
                     range_end = now
 
                     with tempfile.TemporaryDirectory() as tmp_dir:
-
                         pdf_path = export_advertisements_pdf(
                             json_path=config.advertisements_file,
                             out_dir=Path(tmp_dir),
@@ -222,31 +229,32 @@ async def on_text(message: Message, state: FSMContext) -> None:
 
                         await message.answer_document(
                             document=FSInputFile(pdf_path),
-                            caption=f"🗓 Останні 7 днів ({range_start:%Y-%m-%d} — {range_end:%Y-%m-%d})",
+                            caption=(
+                                f"🗓 Останні 7 днів "
+                                f"({range_start:%Y-%m-%d} — {range_end:%Y-%m-%d})"
+                            ),
                             reply_markup=reports_menu(role),
                         )
 
                 case _:
-                    await message.answer(
-                        "Оберіть дію 👇",
-                        reply_markup=reports_menu(role),
-                    )
+                    await message.answer("Оберіть дію 👇", reply_markup=reports_menu(role))
 
-        # DEFAULT FALLBACK
+        # -------------------------
+        # FALLBACK: ROOT
+        # -------------------------
         case _:
-            await message.answer(
-                "Оберіть розділ 👇",
-                reply_markup=root_menu(role),
-            )
+            await message.answer("Оберіть розділ 👇", reply_markup=root_menu(role))
 
 
-# FSM: DATE FROM
 @router.message(ReportsRangeState.date_from)
 async def reports_range_date_from(message: Message, state: FSMContext) -> None:
     """
-    Capture the start date of the report range.
+    FSM step 1: collect start date.
 
-    '-' means no lower bound.
+    Allowed inputs:
+    - YYYY-MM-DD : set lower bound
+    - "-"        : no lower bound
+    - "⬅️ Назад" : cancel flow and go back to ROOT
     """
 
     profile = resolve(message.from_user.id)
@@ -258,38 +266,48 @@ async def reports_range_date_from(message: Message, state: FSMContext) -> None:
     role = profile.role
     text_in = (message.text or "").strip()
 
+    # Allow exiting flow via BACK button while FSM is active
+    if text_in == MenuSection.BACK.value:
+        await state.clear()
+        # stay in Reports menu
+        ACTIVE_MENU_BY_USER[message.from_user.id] = ActiveMenu.REPORTS
+        await message.answer("⬅️ Назад", reply_markup=reports_menu(role))
+        return
+
     if text_in == "-":
         await state.update_data(date_from=None)
-
     else:
         try:
-            parsed_date = datetime.strptime(text_in, "%Y-%m-%d").date()
+            parsed_from = datetime.strptime(text_in, "%Y-%m-%d").date()
         except ValueError:
-
             await message.answer(
-                "❌ Невірний формат. Введіть <code>YYYY-MM-DD</code> або <code>-</code>.",
+                "❌ Невірний формат. Введіть <code>YYYY-MM-DD</code>, <code>-</code> або <b>⬅️ Назад</b>.",
                 reply_markup=reports_menu(role),
             )
             return
 
-        await state.update_data(date_from=parsed_date.isoformat())
+        await state.update_data(date_from=parsed_from.isoformat())
 
     await state.set_state(ReportsRangeState.date_to)
 
     await message.answer(
         "Введіть дату <b>ДО</b> у форматі <code>YYYY-MM-DD</code>\n"
         "Приклад: <code>2026-02-28</code>\n\n"
-        "Щоб пропустити максимальну дату — надішліть <code>-</code>",
+        "Щоб пропустити максимальну дату — надішліть <code>-</code>\n"
+        "Щоб вийти — натисніть <b>⬅️ Назад</b>",
         reply_markup=reports_menu(role),
     )
 
 
-# FSM: DATE TO
 @router.message(ReportsRangeState.date_to)
 async def reports_range_date_to(message: Message, state: FSMContext) -> None:
     """
-    Capture the end date of the report range
-    and generate the PDF report.
+    FSM step 2: collect end date and generate PDF.
+
+    Allowed inputs:
+    - YYYY-MM-DD : set upper bound
+    - "-"        : no upper bound
+    - "⬅️ Назад" : cancel flow and go back to ROOT
     """
 
     profile = resolve(message.from_user.id)
@@ -301,27 +319,33 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
     role = profile.role
     text_in = (message.text or "").strip()
 
+    # Allow exiting flow via BACK button while FSM is active
+    if text_in == MenuSection.BACK.value:
+        await state.clear()
+        # stay in Reports menu
+        ACTIVE_MENU_BY_USER[message.from_user.id] = ActiveMenu.REPORTS
+        await message.answer("⬅️ Назад", reply_markup=reports_menu(role))
+        return
+
     data = await state.get_data()
     date_from_str: str | None = data.get("date_from")
 
-    # Parse end date
+    # Parse end date input
     if text_in == "-":
         date_to_str: str | None = None
-
     else:
         try:
-            parsed_to_date: date = datetime.strptime(text_in, "%Y-%m-%d").date()
+            parsed_to = datetime.strptime(text_in, "%Y-%m-%d").date()
         except ValueError:
-
             await message.answer(
-                "❌ Невірний формат. Введіть <code>YYYY-MM-DD</code> або <code>-</code>.",
+                "❌ Невірний формат. Введіть <code>YYYY-MM-DD</code>, <code>-</code> або <b>⬅️ Назад</b>.",
                 reply_markup=reports_menu(role),
             )
             return
 
-        date_to_str = parsed_to_date.isoformat()
+        date_to_str = parsed_to.isoformat()
 
-    # Convert to datetime bounds
+    # Convert independent date bounds to datetimes (inclusive)
     dt_from: datetime | None = None
     dt_to: datetime | None = None
 
@@ -339,6 +363,7 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
             tzinfo=config.tz,
         )
 
+    # Validate range only if both bounds exist
     if dt_from and dt_to and dt_to < dt_from:
         await message.answer(
             "❌ Дата ДО не може бути меншою за дату ВІД.",
@@ -348,9 +373,8 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
 
     await state.clear()
 
-    # Generate report
+    # Generate and send PDF (no server-side saving)
     with tempfile.TemporaryDirectory() as tmp_dir:
-
         pdf_path = export_advertisements_pdf(
             json_path=config.advertisements_file,
             out_dir=Path(tmp_dir),
@@ -360,7 +384,6 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
         )
 
         caption = "📆 Виписка за період"
-
         if dt_from and dt_to:
             caption += f" {dt_from:%Y-%m-%d} — {dt_to:%Y-%m-%d}"
         elif dt_from:
