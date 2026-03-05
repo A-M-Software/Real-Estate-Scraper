@@ -94,7 +94,7 @@ class OLXClient(BaseClient):
             day = int(match.group("day"))
             year = int(match.group("year"))
             month = _MONTHS[match.group("month").lower()]
-            published_at = datetime(year=year, month=month, day=day)
+            published_at = datetime(year=year, month=month, day=day, tzinfo=config.tz)
             published_at_date = True
 
         else:
