@@ -121,14 +121,6 @@ class Advertisement:
         # Published at
 
         if self.published_at:
-            try:
-                # Set locale to Ukrainian for date formatting
-                setlocale(LC_TIME, "uk_UA.UTF-8")
-
-            except (ValueError, Exception):
-                # Unable to set locale :(
-                logger.warning(f"Unable to set 'uk_UA.UTF-8' locale for date formatting")
-
             text += f"🕓 Опубліковано: "
 
             if self.published_at_date:
