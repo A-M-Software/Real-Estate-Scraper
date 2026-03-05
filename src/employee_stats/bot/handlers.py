@@ -206,7 +206,7 @@ async def on_text(message: Message, state: FSMContext) -> None:
                 # Generate report for last 7 days
                 case ReportsAction.LAST_7_DAYS.value:
 
-                    now = datetime.now()
+                    now = datetime.now(tz=config.tz)
                     range_start = now - timedelta(days=7)
                     range_end = now
 

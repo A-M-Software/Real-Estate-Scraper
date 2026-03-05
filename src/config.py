@@ -1,6 +1,9 @@
 # coding=utf-8
 
 from pathlib import Path
+from warnings import warn
+from zoneinfo import ZoneInfo
+from locale import setlocale, LC_TIME, Error as LocaleError
 
 from pydantic import BaseModel
 from pydantic.fields import Field
@@ -85,6 +88,18 @@ class Config(BaseSettings):
     # Other settings
     advertisements_file: Path
 
+    # Timezone & locale
+    tz: ZoneInfo = ZoneInfo("UTC")
+    lc_time: str = "C.UTF-8"
+
 
 # Load config
 config = Config()
+
+try:
+    # Try to set locale
+    setlocale(LC_TIME, config.lc_time)
+
+except LocaleError:
+    # Unable to set
+    warn(f"Failed to set LC_TIME={config.lc_time!r}, falling back to default locale")

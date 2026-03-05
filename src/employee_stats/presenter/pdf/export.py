@@ -12,6 +12,8 @@ from .money import format_price_per_sqm
 from .filters import load_ads, filter_ads, build_period_text
 from .draw import draw_header, draw_notes_box, ensure_space
 
+from src.config import config
+
 
 def export_advertisements_pdf(
         *,
@@ -41,7 +43,7 @@ def export_advertisements_pdf(
         date_to=date_to,
     )
 
-    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    ts = datetime.now(tz=config.tz).strftime("%Y-%m-%d_%H-%M")
     out_path = out_dir / f"vypyska_{ts}.pdf"
 
     chosen_font = font_path if (font_path and font_path.exists()) else DEFAULT_FONT_PATH
@@ -50,7 +52,7 @@ def export_advertisements_pdf(
     c = Canvas(str(out_path), pagesize=A4)
     layout = Layout(*A4)
 
-    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+    generated_at = datetime.now(tz=config.tz).strftime("%Y-%m-%d %H:%M")
     page_no = 1
 
     y = draw_header(

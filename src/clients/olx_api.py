@@ -60,7 +60,7 @@ class OLXAPIClient(BaseClient):
 
         if access_token := self.data.get("access_token"):
             if expires_at := self.data.get("access_token_expires_at"):
-                if expires_at > datetime.now():
+                if expires_at > datetime.now(tz=config.tz):
                     # Valid access token exists, return it
                     return access_token
 
@@ -107,7 +107,7 @@ class OLXAPIClient(BaseClient):
         # Update tokens
         self.data["refresh_token"] = response["refresh_token"]
         self.data["access_token"] = response["access_token"]
-        self.data["access_token_expires_at"] = datetime.now() + timedelta(seconds=response["expires_in"])
+        self.data["access_token_expires_at"] = datetime.now(tz=config.tz) + timedelta(seconds=response["expires_in"])
 
         return response["access_token"]
 

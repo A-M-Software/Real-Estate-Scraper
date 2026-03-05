@@ -109,7 +109,7 @@ class DimRiaClient(BaseClient):
             # Basic info
             id=data.get("realty_id"),
             url=(cls.public_url + data["beautiful_url"]) if data.get("beautiful_url") else None,
-            published_at=datetime.fromtimestamp(data["publishing_date_ts"]),
+            published_at=datetime.fromtimestamp(data["publishing_date_ts"], tz=config.tz),
             published_at_date=False,  # Not only date but time as well
             source=cls.name,
             brokers_allowed=False,  # Can't check
@@ -141,7 +141,7 @@ class DimRiaClient(BaseClient):
 
             data = await self.get_advertisement(advertisement_id)
             checked[advertisement_id] = data  # Save data to checked dict
-            return datetime.fromtimestamp(data["publishing_date_ts"])
+            return datetime.fromtimestamp(data["publishing_date_ts"], tz=config.tz)
 
         self.logger.debug(
             f"Binary searching for advertisements published after "
