@@ -329,12 +329,14 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
         dt_from = datetime.combine(
             datetime.strptime(date_from_str, "%Y-%m-%d").date(),
             time.min,
+            tzinfo=config.tz,
         )
 
     if date_to_str:
         dt_to = datetime.combine(
             datetime.strptime(date_to_str, "%Y-%m-%d").date(),
             time.max,
+            tzinfo=config.tz,
         )
 
     if dt_from and dt_to and dt_to < dt_from:
