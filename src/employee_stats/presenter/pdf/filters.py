@@ -24,11 +24,24 @@ def parse_ads(raw: Any) -> list[dict[str, Any]]:
 def load_ads(json_path: Path) -> list[dict[str, Any]]:
     """
     Load and parse ads from .json file.
+    Duplicates will be removed automatically.
     """
 
-    raw = json.loads(json_path.read_text(encoding="utf-8"))
+    raw: list[dict] = json.loads(json_path.read_text(encoding="utf-8"))
+    ads = parse_ads(raw)
 
-    return parse_ads(raw)
+    # Remove duplicates based on (id, published_at) tuple
+    results: list[dict] = []
+    existing: set[tuple[int, str]] = set()
+
+    for ad in ads:
+        if (ad_id := ad.get("id")) and (ad_source := ad.get("source")):
+            if (ad_id, ad_source) not in existing:
+                # Found new => add to results and mark as existing
+                existing.add((ad_id, ad_source))
+                results.append(ad)
+
+    return parse_ads(results)
 
 
 def parse_published_dt(value: Any) -> datetime | None:
