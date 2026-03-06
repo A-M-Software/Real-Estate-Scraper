@@ -7,17 +7,16 @@ from reportlab.lib.units import mm
 
 from .fonts import DEFAULT_FONT_PATH, register_font
 from .models import Layout
-from .text import safe_str, wrap_text
-from .money import format_price_per_sqm
-from .filters import load_ads, filter_ads, build_period_text
+from .text import wrap_text
+from .filters import filter_ads, build_period_text
 from .draw import draw_header, draw_notes_box, ensure_space
 
 from src.config import config
+from src.advertisment import format_price, load_advertisements
 
 
 def export_advertisements_pdf(
         *,
-        json_path: Path,
         out_dir: Path,
         title: str = "Виписка оголошень",
         font_path: Path | None = None,
@@ -34,11 +33,15 @@ def export_advertisements_pdf(
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    all_ads = load_ads(json_path)
-    selected_ads = filter_ads(all_ads, date_from=date_from, date_to=date_to)
+    advertisements = load_advertisements()
+    advertisements = filter_ads(
+        advertisements,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
     period_text = build_period_text(
-        selected_ads if (date_from or date_to) else all_ads,
+        advertisements if (date_from or date_to) else advertisements,
         date_from=date_from,
         date_to=date_to,
     )
@@ -65,7 +68,7 @@ def export_advertisements_pdf(
         page_number=page_no,
     )
 
-    if not selected_ads:
+    if not advertisements:
         c.setFont(font, 11)
         c.drawString(layout.left, y, "Немає оголошень за вибраним фільтром.")
         c.save()
@@ -77,26 +80,23 @@ def export_advertisements_pdf(
 
     notes_h = 18 * mm
 
-    for index, ad in enumerate(selected_ads, start=1):
-        ad_id = safe_str(ad.get("id"))
-        street = safe_str(ad.get("street"))
-        rooms = safe_str(ad.get("rooms"))
-        area = ad.get("area")
-        floor = ad.get("floor")
-        total_floors = ad.get("total_floors")
+    for index, advertisement in enumerate(advertisements, start=1):
 
-        description = safe_str(ad.get("description"))
-        published_at = safe_str(ad.get("published_at"))
-        source = safe_str(ad.get("source"))
+        if advertisement.price_per_sqm:
+            # Calculate total price
+            price = round(advertisement.price * advertisement.area) if advertisement.area else None
+            price_per_sqm = round(advertisement.price)
 
-        price = ad.get("price")
-        currency = safe_str(ad.get("currency"))
+        else:
+            # Calculate price per square meter
+            price = advertisement.price
+            price_per_sqm = round(advertisement.price / advertisement.area) if advertisement.area else None
 
-        area_str = safe_str(area)
-        price_str = safe_str(price)
-        per_sqm = format_price_per_sqm(price, currency, area)
+        desc_lines = []
 
-        desc_lines = wrap_text(description, font, body_size, layout.content_w) if description else []
+        if advertisement.description:
+            desc_lines.extend(wrap_text(advertisement.description, font, body_size, layout.content_w))
+
         desc_h = (len(desc_lines) * 4.2 * mm) if desc_lines else 0
 
         # Rough height estimate for pagination
@@ -129,19 +129,21 @@ def export_advertisements_pdf(
 
         # Title line
         c.setFont(font, header_size)
-        title_text = f"{index}. ID {ad_id or '—'}"
-        if street:
-            title_text += f" — {street}"
+        title_text = f"{index}. ID {advertisement.id or '—'}"
+
+        if advertisement.street:
+            title_text += f" — {advertisement.street}"
+
         c.drawString(layout.left, y, title_text)
         y -= 6 * mm
 
         # Meta + price
         c.setFont(font, body_size)
-        meta_left = " • ".join([x for x in [source, published_at] if x])
+        meta_left = " • ".join([x for x in [advertisement.source, advertisement.published_at] if x])
         if meta_left:
             c.drawString(layout.left, y, meta_left)
 
-        meta_right = " ".join([x for x in [price_str, currency] if x]).strip()
+        meta_right = " ".join([x for x in [format_price(price, advertisement.currency)] if x]).strip()
         if meta_right:
             c.drawRightString(layout.page_w - layout.right, y, meta_right)
 
@@ -149,15 +151,22 @@ def export_advertisements_pdf(
 
         # Details
         details: list[str] = []
-        if rooms:
-            details.append(f"Кімнат: {rooms}")
-        if area_str:
-            details.append(f"Площа: {area_str} м²")
-        if per_sqm:
-            details.append(f"Ціна за м²: {per_sqm}")
 
-        if floor or total_floors:
-            details.append(f"Поверх: {floor or '?'}" + (f"/{total_floors}" if total_floors else ""))
+        if advertisement.rooms:
+            details.append(f"Кімнат: {advertisement.rooms}")
+
+        if advertisement.area:
+            details.append(f"Площа: {advertisement.area} м²")
+
+        if price_per_sqm:
+            details.append(f"Ціна за м²: {format_price(price_per_sqm, advertisement.currency)}/м²")
+
+        if advertisement.floor or advertisement.total_floors:
+            details.append(
+                f"Поверх: {advertisement.floor or '?'}" + (
+                    f"/{advertisement.total_floors}" if advertisement.total_floors else ""
+                )
+            )
 
         if details:
             c.drawString(layout.left, y, " • ".join(details))

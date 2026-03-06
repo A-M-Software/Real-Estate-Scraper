@@ -52,13 +52,6 @@ class Advertisement(BaseModel):
         Format advertisement information into a Telegram message
         """
 
-        def _fmt_price(value: float | int) -> str:
-            """
-            Format given price with saved currency
-            """
-
-            return f"${value}" if self.currency.lower() in ("usd", "$") else f"{value} {self.currency}"
-
         # Heading
 
         text = f"📍 <b>{self.street}, {self.city}</b>"
@@ -106,15 +99,15 @@ class Advertisement(BaseModel):
 
         if price and price_per_sqm:
             # Add both total price and price per square meter
-            text += f"💰 {_fmt_price(price)} ({_fmt_price(price_per_sqm)} за м²)"
+            text += f"💰 {format_price(price, self.currency)} ({format_price(price_per_sqm, self.currency)} за м²)"
 
         elif price:
             # Only total price
-            text += f"💰 {_fmt_price(price)}"
+            text += f"💰 {format_price(price, self.currency)}"
 
         elif price_per_sqm:
             # Only price per square meter
-            text += f"💰 {_fmt_price(price_per_sqm)} за м²"
+            text += f"💰 {format_price(price_per_sqm, self.currency)} за м²"
 
         text += "\n"
 
@@ -226,6 +219,18 @@ class Advertisement(BaseModel):
         return self.id == other.id and self.source == other.source
 
 
+def format_price(value: float | int | None, currency: str) -> str | None:
+    """
+    Format given price with given currency.
+    """
+
+    if value is None:
+        # No price
+        return None
+
+    return f"${value}" if currency.lower() in ("usd", "$") else f"{value} {currency}"
+
+
 def save_advertisements(
         advertisements: Advertisement | list[Advertisement],
         *_advertisements: Advertisement,
@@ -275,3 +280,17 @@ def save_advertisements(
     with config.advertisements_file.open("w") as file:
         # Save updated data to file
         dump(data, file, default=str, ensure_ascii=False, indent=2)
+
+
+def load_advertisements() -> list[Advertisement]:
+    """
+    Load advertisements from file.
+    """
+
+    if not config.advertisements_file.exists():
+        # No file, return empty list
+        return []
+
+    with config.advertisements_file.open("r") as file:
+        # Load data from file
+        return [Advertisement(**data) for data in load(file)]
