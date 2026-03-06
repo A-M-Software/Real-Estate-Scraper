@@ -4,7 +4,7 @@ import re
 from json import load, dump
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from .config import config
@@ -41,6 +41,7 @@ class Advertisement(BaseModel):
     photo_url: str | None = None
 
     # Internal
+    collected_at: datetime = Field(default_factory=lambda: datetime.now(tz=config.tz))
     data: dict | str | None = None
 
     @property
@@ -214,26 +215,60 @@ class Advertisement(BaseModel):
 
         return False
 
+    def __eq__(self, other: "Advertisement") -> bool:
+        """
+        Returns true if both advertisements have same ID and source.
+        """
 
-def save_advertisements(advertisements: list[Advertisement]) -> None:
+        assert isinstance(other, Advertisement), "Can only compare Advertisement instances"
+        return self.id == other.id and self.source == other.source
+
+
+def save_advertisements(
+        advertisements: Advertisement | list[Advertisement],
+        *_advertisements: Advertisement,
+        update: bool = True,
+) -> None:
     """
-    Save collected advertisements to a file (for future use)
+    Save collected advertisements to a file (for future use).
+    If advertisement with given ID and source already exists,
+    it will be updated if update=True, otherwise it will be skipped.
     """
+
+    if not isinstance(advertisements, list):
+        # Convert to list
+        advertisements = [advertisements]
+
+    # Add additional advertisements if provided
+    advertisements.extend(_advertisements)
 
     if not config.advertisements_file.parent.exists():
         # Create parent directory if it doesn't exist
         config.advertisements_file.parent.mkdir(parents=True, exist_ok=True)
 
-    data = []
+    # Check for existing advertisements
+    existing: list[Advertisement] = []
 
     if config.advertisements_file.exists():
         with config.advertisements_file.open("r") as file:
             # Load existing data if file exists
-            data = load(file)
+            existing = [Advertisement(**data) for data in load(file)]
 
     for advertisement in advertisements:
-        # Add new advertisements to existing data
-        data.append(advertisement.model_dump())
+        for index, existing_advertisement in enumerate(existing):
+            if advertisement == existing_advertisement:
+                # Advertisement with same ID and source already exists
+                if update:
+                    # Update existing advertisement
+                    existing[index] = advertisement
+
+                break
+        else:
+            # No existing advertisement with same ID and source, add new one
+            existing.append(advertisement)
+
+    # Convert to JSON
+    data = [advertisement.model_dump() for advertisement in existing]
 
     with config.advertisements_file.open("w") as file:
         # Save updated data to file
