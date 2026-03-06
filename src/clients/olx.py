@@ -88,7 +88,7 @@ class OLXClient(BaseClient):
             time_str = match.group("time")
             published_at = datetime.strptime(time_str, "%H:%M")
             published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=tz)
-            published_at_date = False
+            published_at_is_date = False
 
         elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
             # Advertisement published on a specific date => parse day, month & year
@@ -96,7 +96,7 @@ class OLXClient(BaseClient):
             year = int(match.group("year"))
             month = _MONTHS[match.group("month").lower()]
             published_at = datetime(year=year, month=month, day=day, tzinfo=tz)
-            published_at_date = True
+            published_at_is_date = True
 
         else:
             # Unknown date format
@@ -106,7 +106,7 @@ class OLXClient(BaseClient):
             "id": advertisement_id,
             "url": url,
             "published_at": published_at,
-            "published_at_date": published_at_date,
+            "published_at_is_date": published_at_is_date,
             "is_promoted": is_promoted,
         }
 
@@ -269,7 +269,7 @@ class OLXClient(BaseClient):
             id=item["id"],
             url=item["url"],
             published_at=item["published_at"],
-            published_at_date=item["published_at_date"],
+            published_at_is_date=item["published_at_is_date"],
             source=cls.name,
             brokers_allowed=brokers_allowed,
 
@@ -282,7 +282,7 @@ class OLXClient(BaseClient):
             photo_url=photo_url,
 
             # Internal
-            data=text,
+            # data=text,  # Weighs too much (anyway we can get it from the URL)
         )
 
     async def get_latest_advertisements(

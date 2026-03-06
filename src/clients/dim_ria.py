@@ -101,7 +101,7 @@ class DimRiaClient(BaseClient):
             street=data.get("street_name_uk"),
             building_name=data.get("user_newbuild_name_uk"),
             rooms=data.get("rooms_count"),
-            area=data.get("total_square_meters"),
+            area=int(data.get("total_square_meters")),
             floor=data.get("floor"),
             total_floors=data.get("floors_count"),
             description=" ".join(data["description_uk"].split()) if data.get("description_uk") else "",
@@ -110,9 +110,7 @@ class DimRiaClient(BaseClient):
             id=data.get("realty_id"),
             url=(cls.public_url + data["beautiful_url"]) if data.get("beautiful_url") else None,
             published_at=datetime.fromtimestamp(data["publishing_date_ts"], tz=config.tz),
-            published_at_date=False,  # Not only date but time as well
             source=cls.name,
-            brokers_allowed=False,  # Can't check
 
             # Price
             price=data.get("price"),

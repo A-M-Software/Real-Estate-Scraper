@@ -3,41 +3,38 @@
 import re
 from json import load, dump
 from datetime import datetime
-from locale import setlocale, LC_TIME
-from dataclasses import dataclass, asdict
 
+from pydantic import BaseModel
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from .logger import base_logger as logger
 from .config import config
 
 # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 _MAX_DESC_LENGTH = 512
 
 
-@dataclass
-class Advertisement:
+class Advertisement(BaseModel):
     # Apartment info
     city: str
     street: str
-    building_name: str | None
-    rooms: int | str
-    area: int  # Square meters
-    floor: int | None
+    building_name: str | None = None
+    rooms: int | str | None = None
+    area: int | None = None  # Square meters
+    floor: int | None = None
     total_floors: int | None
-    description: str
+    description: str | None = None
 
     # Basic info
     id: int
     url: str
     published_at: datetime
-    published_at_date: bool  # True if published_at contains only date information without time
+    published_at_is_date: bool = False  # True if published_at contains only date information without time
     source: str
-    brokers_allowed: bool
+    brokers_allowed: bool = False
 
     # Price
     price: float
-    currency: str
+    currency: str = "$"
     price_per_sqm: bool = False  # If True, price is per square meter, otherwise total price
 
     # Images
@@ -123,7 +120,7 @@ class Advertisement:
         if self.published_at:
             text += f"🕓 Опубліковано: "
 
-            if self.published_at_date:
+            if self.published_at_is_date:
                 # No time information, only date
                 text += self.published_at.astimezone(config.tz).strftime("%d %B (%A)") + "\n"
 
@@ -234,8 +231,9 @@ def save_advertisements(advertisements: list[Advertisement]) -> None:
             # Load existing data if file exists
             data = load(file)
 
-    # Add new advertisements to existing data
-    data.extend(list(map(asdict, advertisements)))
+    for advertisement in advertisements:
+        # Add new advertisements to existing data
+        data.append(advertisement.model_dump())
 
     with config.advertisements_file.open("w") as file:
         # Save updated data to file
