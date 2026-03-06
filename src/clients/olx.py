@@ -110,7 +110,7 @@ class OLXClient(BaseClient):
             "is_promoted": is_promoted,
         }
 
-    async def search_advertisements(self, **params) -> list[dict]:
+    async def search_advertisements(self, max_pages: int = 1, **params) -> list[dict]:
         """
         Search for latest advertisements on the OLX, and returns a list of objects.
         Each object contains `id`, `url`, `published_at` and `is_promoted` fields.
@@ -118,43 +118,48 @@ class OLXClient(BaseClient):
 
         # Set list view for parsing
         params["view"] = "list"
-
-        # Request page
-        response = await self.request_html(
-            method="GET",
-            url=self.search_url,
-            params=params,
-        )
-
-        # Parse all advertisements from the page
-        tree = html.fromstring(response)
-        advertisements: list[html.HtmlElement] = tree.xpath("//div[contains(@data-cy, \"l-card\")]")
-
-        # Prepare for parsing
-        self.logger.debug(f"Found {len(advertisements)} advertisements to parse")
         items = []
+        page = 0
 
-        for index, advertisement in enumerate(advertisements, start=1):
-            try:
-                # Parse advertisement's details
-                item = self._parse_searched_advertisement(advertisement)
+        while (page := page + 1) <= max_pages:
+            # Request page
+            if page > 1:
+                params["page"] = page
 
-            except (ValueError, Exception):
-                # Failed to parse
-                self.logger.error(
-                    f"({index}/{len(advertisements)}) "
-                    f"Failed to parse advertisement",
-                    exc_info=True,
-                )
+            response = await self.request_html(
+                method="GET",
+                url=self.search_url,
+                params=params,
+            )
 
-            else:
-                # Add parsed item to the list
-                items.append(item)
+            # Parse all advertisements from the page
+            tree = html.fromstring(response)
+            advertisements: list[html.HtmlElement] = tree.xpath("//div[contains(@data-cy, \"l-card\")]")
 
-                self.logger.debug(
-                    f"({index}/{len(advertisements)}) "
-                    f"Successfully parsed advertisement: {item}"
-                )
+            # Prepare for parsing
+            self.logger.debug(f"Found {len(advertisements)} advertisements to parse on page {page}")
+
+            for index, advertisement in enumerate(advertisements, start=1):
+                try:
+                    # Parse advertisement's details
+                    item = self._parse_searched_advertisement(advertisement)
+
+                except (ValueError, Exception):
+                    # Failed to parse
+                    self.logger.error(
+                        f"({index}/{len(advertisements)}) "
+                        f"Failed to parse advertisement",
+                        exc_info=True,
+                    )
+
+                else:
+                    # Add parsed item to the list
+                    items.append(item)
+
+                    self.logger.debug(
+                        f"({index}/{len(advertisements)}) "
+                        f"Successfully parsed advertisement: {item}"
+                    )
 
         # Sort by publication date (most recent first)
         items.sort(key=lambda i: i["published_at"], reverse=True)
