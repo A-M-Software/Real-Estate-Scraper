@@ -137,9 +137,20 @@ def export_advertisements_pdf(
         c.drawString(layout.left, y, title_text)
         y -= 6 * mm
 
+        published_at = None
+
+        if advertisement.published_at:
+            if advertisement.published_at_is_date:
+                # Only date is available
+                published_at = advertisement.published_at.strftime("%d.%m.%Y")
+
+            else:
+                # Date and time are available
+                published_at = advertisement.published_at.strftime("%d.%m.%Y %H:%M")
+
         # Meta + price
         c.setFont(font, body_size)
-        meta_left = " • ".join([x for x in [advertisement.source, advertisement.published_at] if x])
+        meta_left = " • ".join([x for x in [advertisement.source, published_at] if x])
         if meta_left:
             c.drawString(layout.left, y, meta_left)
 

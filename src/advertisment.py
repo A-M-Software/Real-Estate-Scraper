@@ -21,7 +21,7 @@ class Advertisement(BaseModel):
     rooms: int | str | None = None
     area: int | None = None  # Square meters
     floor: int | None = None
-    total_floors: int | None
+    total_floors: int | None = None
     description: str | None = None
 
     # Basic info
