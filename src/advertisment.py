@@ -41,6 +41,8 @@ class Advertisement(BaseModel):
     photo_url: str | None = None
 
     # Internal
+    chat_id: int | None = None
+    message_id: int | None = None  # Telegram message ID after sending to Telegram channel
     collected_at: datetime = Field(default_factory=lambda: datetime.now(tz=config.tz))
     data: dict | str | None = None
 
