@@ -228,7 +228,7 @@ def format_price(value: float | int | None, currency: str) -> str | None:
         # No price
         return None
 
-    return f"${value}" if currency.lower() in ("usd", "$") else f"{value} {currency}"
+    return f"${int(value)}" if currency.lower() in ("usd", "$") else f"{int(value)} {currency}"
 
 
 def save_advertisements(
