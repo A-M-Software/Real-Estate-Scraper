@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from src.config import config
 from src.advertisment import Advertisement
 
 
@@ -24,6 +25,10 @@ def filter_ads(
         if advertisement.published_at is None:
             # No publication date => skip
             continue
+
+        elif advertisement.published_at.tzinfo is None:
+            # Set configured timezone
+            advertisement.published_at = advertisement.published_at.replace(tzinfo=config.tz)
 
         if date_from and advertisement.published_at < date_from:
             # Published before the start date => skip
