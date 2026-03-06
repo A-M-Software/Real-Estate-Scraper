@@ -28,7 +28,7 @@ def filter_ads(
 
         elif advertisement.published_at.tzinfo is None:
             # Set configured timezone
-            advertisement.published_at = advertisement.published_at.replace(tzinfo=config.tz)
+            advertisement.published_at = advertisement.published_at.astimezone(config.tz)
 
         if date_from and advertisement.published_at < date_from:
             # Published before the start date => skip
@@ -61,6 +61,7 @@ def build_period_text(
         return f"Період: {p_from} — {p_to}"
 
     dt_list = [advertisement.published_at for advertisement in advertisements]
+    dt_list = [dt.astimezone(config.tz) if dt and dt.tzinfo is None else dt for dt in dt_list]  # Set timezone if missing
     dt_list = list(filter(None, dt_list))  # Remove None values
 
     oldest = min(dt_list) if dt_list else None
