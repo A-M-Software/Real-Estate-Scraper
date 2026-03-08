@@ -1,11 +1,4 @@
-from typing import Any
-
 from reportlab.pdfbase import pdfmetrics
-
-
-def safe_str(value: Any) -> str:
-    """Convert value to trimmed string (None -> '')."""
-    return "" if value is None else str(value).strip()
 
 
 def wrap_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:

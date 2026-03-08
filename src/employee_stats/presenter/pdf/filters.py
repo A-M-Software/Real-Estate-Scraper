@@ -1,99 +1,50 @@
-import json
 from datetime import datetime
-from pathlib import Path
-from typing import Any
 
 from src.config import config
-from .text import safe_str
-
-
-def parse_ads(raw: Any) -> list[dict[str, Any]]:
-    """
-    Extract list[dict] from supported JSON shapes.
-    """
-
-    if isinstance(raw, list):
-        return [x for x in raw if isinstance(x, dict)]
-
-    if isinstance(raw, dict):
-        items = raw.get("items") or raw.get("advertisements") or raw.get("data") or []
-        return [x for x in items if isinstance(x, dict)]
-
-    return []
-
-
-def load_ads(json_path: Path) -> list[dict[str, Any]]:
-    """
-    Load and parse ads from .json file.
-    Duplicates will be removed automatically.
-    """
-
-    raw: list[dict] = json.loads(json_path.read_text(encoding="utf-8"))
-    ads = parse_ads(raw)
-
-    # Remove duplicates based on (id, published_at) tuple
-    results: list[dict] = []
-    existing: set[tuple[int, str]] = set()
-
-    for ad in ads:
-        if (ad_id := ad.get("id")) and (ad_source := ad.get("source")):
-            if (ad_id, ad_source) not in existing:
-                # Found new => add to results and mark as existing
-                existing.add((ad_id, ad_source))
-                results.append(ad)
-
-    return parse_ads(results)
-
-
-def parse_published_dt(value: Any) -> datetime | None:
-    """
-    Parse published_at value into datetime if possible.
-    """
-
-    if not (value := safe_str(value)):
-        # No value or empty string
-        return None
-
-    try:
-        # Load from ISO format
-        return datetime.fromisoformat(value).astimezone(config.tz)
-
-    except ValueError:
-        # Unable to parse as ISO
-        return None
+from src.advertisment import Advertisement
 
 
 def filter_ads(
-        ads: list[dict[str, Any]],
+        advertisements: list[Advertisement],
         *,
         date_from: datetime | None,
         date_to: datetime | None,
-) -> list[dict[str, Any]]:
+) -> list[Advertisement]:
     """
     Filter ads by published_at with independent bounds.
     If published_at is missing -> ad is excluded when filters are enabled.
     """
 
-    result: list[dict[str, Any]] = []
+    results: list[Advertisement] = []
 
     if not (date_from or date_to):
-        return ads
+        # No filters
+        return advertisements
 
-    for ad in ads:
-        dt = parse_published_dt(ad.get("published_at"))
-        if dt is None:
+    for advertisement in advertisements:
+        if advertisement.published_at is None:
+            # No publication date => skip
             continue
-        if date_from and dt < date_from:
-            continue
-        if date_to and dt > date_to:
-            continue
-        result.append(ad)
 
-    return result
+        elif advertisement.published_at.tzinfo is None:
+            # Set configured timezone
+            advertisement.published_at = advertisement.published_at.astimezone(config.tz)
+
+        if date_from and advertisement.published_at < date_from:
+            # Published before the start date => skip
+            continue
+
+        if date_to and advertisement.published_at > date_to:
+            # Published after the end date => skip
+            continue
+
+        results.append(advertisement)
+
+    return results
 
 
 def build_period_text(
-        ads: list[dict[str, Any]],
+        advertisements: list[Advertisement],
         *,
         date_from: datetime | None,
         date_to: datetime | None,
@@ -109,8 +60,9 @@ def build_period_text(
         p_to = date_to.strftime("%Y-%m-%d") if date_to else "—"
         return f"Період: {p_from} — {p_to}"
 
-    dt_list = [parse_published_dt(a.get("published_at")) for a in ads]
-    dt_list = [x for x in dt_list if x is not None]
+    dt_list = [advertisement.published_at for advertisement in advertisements]
+    dt_list = [dt.astimezone(config.tz) if dt and dt.tzinfo is None else dt for dt in dt_list]  # Set timezone if missing
+    dt_list = list(filter(None, dt_list))  # Remove None values
 
     oldest = min(dt_list) if dt_list else None
     newest = max(dt_list) if dt_list else None

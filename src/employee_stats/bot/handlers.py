@@ -1,5 +1,5 @@
 import tempfile
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
 from aiogram import Router
@@ -187,7 +187,6 @@ async def on_text(message: Message, state: FSMContext) -> None:
                 case ReportsAction.ALL.value:
                     with tempfile.TemporaryDirectory() as tmp_dir:
                         pdf_path = export_advertisements_pdf(
-                            json_path=config.advertisements_file,
                             out_dir=Path(tmp_dir),
                         )
 
@@ -218,7 +217,6 @@ async def on_text(message: Message, state: FSMContext) -> None:
 
                     with tempfile.TemporaryDirectory() as tmp_dir:
                         pdf_path = export_advertisements_pdf(
-                            json_path=config.advertisements_file,
                             out_dir=Path(tmp_dir),
                             title="Виписка оголошень за останні 7 днів",
                             date_from=range_start,
@@ -374,7 +372,6 @@ async def reports_range_date_to(message: Message, state: FSMContext) -> None:
     # Generate and send PDF (no server-side saving)
     with tempfile.TemporaryDirectory() as tmp_dir:
         pdf_path = export_advertisements_pdf(
-            json_path=config.advertisements_file,
             out_dir=Path(tmp_dir),
             title="Виписка оголошень за період",
             date_from=dt_from,

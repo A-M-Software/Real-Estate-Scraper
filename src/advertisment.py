@@ -3,47 +3,47 @@
 import re
 from json import load, dump
 from datetime import datetime
-from locale import setlocale, LC_TIME
-from dataclasses import dataclass, asdict
 
+from pydantic import BaseModel, Field
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from .logger import base_logger as logger
 from .config import config
 
 # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 _MAX_DESC_LENGTH = 512
 
 
-@dataclass
-class Advertisement:
+class Advertisement(BaseModel):
     # Apartment info
     city: str
     street: str
-    building_name: str | None
-    rooms: int | str
-    area: int  # Square meters
-    floor: int | None
-    total_floors: int | None
-    description: str
+    building_name: str | None = None
+    rooms: int | str | None = None
+    area: int | None = None  # Square meters
+    floor: int | None = None
+    total_floors: int | None = None
+    description: str | None = None
 
     # Basic info
     id: int
     url: str
     published_at: datetime
-    published_at_date: bool  # True if published_at contains only date information without time
+    published_at_is_date: bool = False  # True if published_at contains only date information without time
     source: str
-    brokers_allowed: bool
+    brokers_allowed: bool = False
 
     # Price
     price: float
-    currency: str
+    currency: str = "$"
     price_per_sqm: bool = False  # If True, price is per square meter, otherwise total price
 
     # Images
     photo_url: str | None = None
 
     # Internal
+    chat_id: int | None = None
+    message_id: int | None = None  # Telegram message ID after sending to Telegram channel
+    collected_at: datetime = Field(default_factory=lambda: datetime.now(tz=config.tz))
     data: dict | str | None = None
 
     @property
@@ -51,13 +51,6 @@ class Advertisement:
         """
         Format advertisement information into a Telegram message
         """
-
-        def _fmt_price(value: float | int) -> str:
-            """
-            Format given price with saved currency
-            """
-
-            return f"${value}" if self.currency.lower() in ("usd", "$") else f"{value} {self.currency}"
 
         # Heading
 
@@ -106,15 +99,15 @@ class Advertisement:
 
         if price and price_per_sqm:
             # Add both total price and price per square meter
-            text += f"💰 {_fmt_price(price)} ({_fmt_price(price_per_sqm)} за м²)"
+            text += f"💰 {format_price(price, self.currency)} ({format_price(price_per_sqm, self.currency)} за м²)"
 
         elif price:
             # Only total price
-            text += f"💰 {_fmt_price(price)}"
+            text += f"💰 {format_price(price, self.currency)}"
 
         elif price_per_sqm:
             # Only price per square meter
-            text += f"💰 {_fmt_price(price_per_sqm)} за м²"
+            text += f"💰 {format_price(price_per_sqm, self.currency)} за м²"
 
         text += "\n"
 
@@ -123,7 +116,7 @@ class Advertisement:
         if self.published_at:
             text += f"🕓 Опубліковано: "
 
-            if self.published_at_date:
+            if self.published_at_is_date:
                 # No time information, only date
                 text += self.published_at.astimezone(config.tz).strftime("%d %B (%A)") + "\n"
 
@@ -217,26 +210,87 @@ class Advertisement:
 
         return False
 
+    def __eq__(self, other: "Advertisement") -> bool:
+        """
+        Returns true if both advertisements have same ID and source.
+        """
 
-def save_advertisements(advertisements: list[Advertisement]) -> None:
+        assert isinstance(other, Advertisement), "Can only compare Advertisement instances"
+        return self.id == other.id and self.source == other.source
+
+
+def format_price(value: float | int | None, currency: str) -> str | None:
     """
-    Save collected advertisements to a file (for future use)
+    Format given price with given currency.
     """
+
+    if value is None:
+        # No price
+        return None
+
+    return f"${int(value)}" if currency.lower() in ("usd", "$") else f"{int(value)} {currency}"
+
+
+def save_advertisements(
+        advertisements: Advertisement | list[Advertisement],
+        *_advertisements: Advertisement,
+        update: bool = True,
+) -> None:
+    """
+    Save collected advertisements to a file (for future use).
+    If advertisement with given ID and source already exists,
+    it will be updated if update=True, otherwise it will be skipped.
+    """
+
+    if not isinstance(advertisements, list):
+        # Convert to list
+        advertisements = [advertisements]
+
+    # Add additional advertisements if provided
+    advertisements.extend(_advertisements)
 
     if not config.advertisements_file.parent.exists():
         # Create parent directory if it doesn't exist
         config.advertisements_file.parent.mkdir(parents=True, exist_ok=True)
 
-    data = []
+    # Check for existing advertisements
+    existing: list[Advertisement] = []
 
     if config.advertisements_file.exists():
         with config.advertisements_file.open("r") as file:
             # Load existing data if file exists
-            data = load(file)
+            existing = [Advertisement(**data) for data in load(file)]
 
-    # Add new advertisements to existing data
-    data.extend(list(map(asdict, advertisements)))
+    for advertisement in advertisements:
+        for index, existing_advertisement in enumerate(existing):
+            if advertisement == existing_advertisement:
+                # Advertisement with same ID and source already exists
+                if update:
+                    # Update existing advertisement
+                    existing[index] = advertisement
+
+                break
+        else:
+            # No existing advertisement with same ID and source, add new one
+            existing.append(advertisement)
+
+    # Convert to JSON
+    data = [advertisement.model_dump() for advertisement in existing]
 
     with config.advertisements_file.open("w") as file:
         # Save updated data to file
         dump(data, file, default=str, ensure_ascii=False, indent=2)
+
+
+def load_advertisements() -> list[Advertisement]:
+    """
+    Load advertisements from file.
+    """
+
+    if not config.advertisements_file.exists():
+        # No file, return empty list
+        return []
+
+    with config.advertisements_file.open("r") as file:
+        # Load data from file
+        return [Advertisement(**data) for data in load(file)]

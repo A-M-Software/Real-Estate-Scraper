@@ -43,7 +43,7 @@ class TelegramConfig(BaseModel):
     """
 
     token: str
-    chat_id: str
+    chat_id: int
 
 
 class BotConfig(BaseModel):
