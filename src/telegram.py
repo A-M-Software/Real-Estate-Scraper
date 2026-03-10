@@ -41,7 +41,7 @@ async def send_advertisements(
         await send_advertisement(advertisement, bot, chat_id)
 
         # Sleep for a short time to avoid hitting Telegram API rate limits
-        await sleep(1)
+        await sleep(2)
 
     # Save updated advertisements with message IDs to the file
     save_advertisements(advertisements=advertisements)
