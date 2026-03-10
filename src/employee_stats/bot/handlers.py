@@ -49,9 +49,8 @@ async def start(message: Message) -> None:
     profile = resolve(message.from_user.id)
 
     logger.info(
-        "/start command received | user_id=%s | username=%s | chat_id=%s",
+        "/start command received | user=%s | chat_id=%s",
         message.from_user,
-        message.from_user.username,
         message.chat.id,
     )
 
