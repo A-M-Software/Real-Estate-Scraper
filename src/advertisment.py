@@ -134,6 +134,10 @@ class Advertisement(BaseModel):
             # Found words indicating that brokers are forbidden
             text += "🚫 Посередникам не турбувати\n"
 
+        # ID
+
+        text += f"🆔{self.id}\n"
+
         # Description
 
         if self.description:
