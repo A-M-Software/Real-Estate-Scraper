@@ -136,7 +136,7 @@ class Advertisement(BaseModel):
 
         # ID
 
-        text += f"🆔{self.id}\n"
+        text += f"🆔 <code>{self.id}</code>\n"
 
         # Description
 
