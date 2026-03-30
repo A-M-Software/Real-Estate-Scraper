@@ -309,28 +309,30 @@ class OLXClient(BaseClient):
         # Prepare parameters for searching
         kwargs = {
             "currency": "USD",
+            "search[dist]": 5,  # Search within 5 km radius (to include nearby areas)
             "search[private_business]": "private",  # Only owner
             "search[order]": "created_at:desc",  # Publication date (descending)
         }
 
         # Load advertisements
-        data = await self.search_advertisements(**kwargs)
-        index = 0
+        all_data = await self.search_advertisements(**kwargs)
+        data = []
 
-        for index, item in enumerate(data):
+        for index, item in enumerate(all_data):
             if item["id"] in existing_ids and not ignore_existing:
                 # Found an existing advertisement, stop loading more
-                self.logger.info(f"Found an existing ID={item['id']}, stop loading more")
-                break
+                self.logger.info(f"Found an existing ID={item['id']}")
 
             elif after_date is not None and item["published_at"] < after_date and not item["is_promoted"]:
                 # Found an advertisement published before the specified date, stop loading more
-                self.logger.info(f"Found an ID posted before '{after_date}', stop loading more")
-                break
+                self.logger.info(f"Found an ID posted before '{after_date}'")
 
-        # Limit to only new advertisements
-        self.logger.info(f"Limiting to {index} new advertisement(s) (excluding existing and old ones)")
-        data = data[:index]
+            else:
+                # Found new advertisement
+                data.append(item)
+
+        # Log new advertisements
+        self.logger.info(f"Found {len(data)} advertisement(s)")
 
         for duplicate_index, duplicate_item in reversed(list(enumerate(data))):
             for check_index, check_item in enumerate(data[:duplicate_index]):
