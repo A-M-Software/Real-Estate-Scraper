@@ -1,1 +1,2 @@
 */30 * * * * python3 run.py
+15,45 * * * * python3 run.py --only=OLX
