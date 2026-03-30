@@ -309,7 +309,7 @@ class OLXClient(BaseClient):
         # Prepare parameters for searching
         kwargs = {
             "currency": "USD",
-            "search[dist]": 5,  # Search within 5 km radius (to include nearby areas)
+            # "search[dist]": 5,  # Search within 5 km radius (to include nearby areas)
             "search[private_business]": "private",  # Only owner
             "search[order]": "created_at:desc",  # Publication date (descending)
         }
