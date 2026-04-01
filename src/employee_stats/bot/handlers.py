@@ -2,7 +2,7 @@ import tempfile
 from datetime import datetime, time, timedelta
 from pathlib import Path
 
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.dispatcher.event.bases import SkipHandler
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -34,6 +34,7 @@ from src.employee_stats.presenter.text import (
 from src.logger import bot_logger as logger
 
 router = Router()
+router.message.filter(F.chat.type == "private")  # Listen only private chats
 
 
 @router.message(CommandStart())
