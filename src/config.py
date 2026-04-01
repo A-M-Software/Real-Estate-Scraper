@@ -44,6 +44,7 @@ class TelegramConfig(BaseModel):
 
     token: str
     chat_id: int
+    discussion_chat_id: int | None = None
 
 
 class BotConfig(BaseModel):
