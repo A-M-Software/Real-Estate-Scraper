@@ -38,15 +38,16 @@ async def handle_discussion(message: Message) -> None:
     for offset in range(0, len(all_media), 10):
         # Prepare each media page
         media = all_media[offset:offset + 10]
+        kwargs = {"reply_to_message_id": message.message_id}
 
         if len(media) > 1:
             # Few photos/videos => send as media group
-            await message.answer_media_group(media=media)
+            await message.answer_media_group(media=media, **kwargs)
 
         elif isinstance(media[0], InputMediaPhoto):
             # Single photo
-            await message.answer_photo(photo=media[0].media)
+            await message.answer_photo(photo=media[0].media, **kwargs)
 
         elif isinstance(media[0], InputMediaVideo):
             # Single video
-            await message.answer_video(video=media[0].media)
+            await message.answer_video(video=media[0].media, **kwargs)
