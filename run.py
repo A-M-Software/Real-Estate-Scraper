@@ -34,6 +34,10 @@ class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
         default=False,
         description="do not skip advertisements that were already collected before",
     )
+    send: CliImplicitFlag[bool] = Field(
+        default=True,
+        description="send advertisements to telegram",
+    )
     only: list[ClientName] | None = Field(
         default=None,
         description="Collect advertisements only from these sources. If not set, collect from all.",
@@ -64,5 +68,6 @@ if __name__ == "__main__":
             after_date=settings.after_date,
             ignore_existing=settings.ignore_existing,
             only=settings.only,
+            send=settings.send,
         )
     )

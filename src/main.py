@@ -12,6 +12,7 @@ async def scrap_advertisements(
         after_date: datetime | None = None,
         ignore_existing: bool = False,
         only: list[ClientName] | None = None,
+        send: bool = True,
 ) -> None:
     """
     Collect advertisements from all sources.
@@ -50,5 +51,6 @@ async def scrap_advertisements(
     # Save collected advertisements to the file
     save_advertisements(advertisements=advertisements)
 
-    # Send collected advertisements to Telegram
-    await send_advertisements(advertisements=advertisements)
+    if send:
+        # Send collected advertisements to Telegram
+        await send_advertisements(advertisements=advertisements)
