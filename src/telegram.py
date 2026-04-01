@@ -43,11 +43,11 @@ async def send_advertisements(
         # Send each advertisement to Telegram channel
         await send_advertisement(advertisement, bot, chat_id, **kwargs)
 
+        # Save updated advertisements with message IDs to the file
+        save_advertisements(advertisements=advertisements)
+
         # Sleep for a short time to avoid hitting Telegram API rate limits
         await sleep(2)
-
-    # Save updated advertisements with message IDs to the file
-    save_advertisements(advertisements=advertisements)
 
 
 async def send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: int, **kwargs) -> None:
@@ -66,7 +66,6 @@ async def send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: in
             chat_id=chat_id,
             photo=advertisement.photo_url,
             caption=advertisement.formatted_text,
-            reply_markup=advertisement.url_button_markup,
             parse_mode=ParseMode.HTML,
             **kwargs,
         )
@@ -76,7 +75,6 @@ async def send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: in
         message = await bot.send_message(
             chat_id=chat_id,
             text=advertisement.formatted_text,
-            reply_markup=advertisement.url_button_markup,
             parse_mode=ParseMode.HTML,
             **kwargs,
         )

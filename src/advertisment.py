@@ -136,9 +136,9 @@ class Advertisement(BaseModel):
             # Found words indicating that brokers are forbidden
             text += "🚫 Посередникам не турбувати\n"
 
-        # ID
+        # Link & ID
 
-        text += f"🆔 <code>{self.id}</code>\n"
+        text += f"ℹ️ <a href=\"{self.url}\">Переглянути на {self.source}</a> (<code>{self.id}</code>)\n"
 
         # Description
 
@@ -152,26 +152,6 @@ class Advertisement(BaseModel):
                 text += f"\n<blockquote expandable>{self.description}</blockquote>"
 
         return text
-
-    @property
-    def url_button_markup(self) -> InlineKeyboardMarkup | None:
-        """
-        Get URL button markup for Telegram message if URL is available
-        """
-
-        # Set default value
-        result = None
-
-        if self.url:
-            result = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(text=f"Переглянути на {self.source}", url=self.url)
-                    ],
-                ]
-            )
-
-        return result
 
     @property
     def brokers_forbidden(self) -> bool:
