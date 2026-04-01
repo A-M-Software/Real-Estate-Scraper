@@ -257,7 +257,8 @@ class OLXClient(BaseClient):
         price = int(float(price_str.replace(" ", "")))
 
         # Images
-        photo_url, *_ = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src") + [None]  # type: str
+        photo_urls: list[str] = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src")
+        photo_url = photo_urls[0] if photo_urls else None
 
         return Advertisement(
             # Apartment info
@@ -285,6 +286,8 @@ class OLXClient(BaseClient):
 
             # Images
             photo_url=photo_url,
+            photo_urls=photo_urls,
+            video_urls=[],  # TODO?
 
             # Internal
             # data=text,  # Weighs too much (anyway we can get it from the URL)
