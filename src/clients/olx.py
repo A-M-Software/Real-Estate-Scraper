@@ -90,7 +90,7 @@ class OLXClient(BaseClient):
             published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=tz)
             published_at_is_date = False
 
-        elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
+        elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>\w+) (?P<year>\d{4}) р.", published_str):
             # Advertisement published on a specific date => parse day, month & year
             day = int(match.group("day"))
             year = int(match.group("year"))
