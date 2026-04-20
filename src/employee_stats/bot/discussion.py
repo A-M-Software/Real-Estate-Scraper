@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo
 
 from src.config import config
@@ -10,13 +11,11 @@ from src.advertisment import load_advertisements
 router = Router()
 router.message.filter(
     # Only messages sent to discussion chat
-    (F.chat.id == config.telegram.discussion_chat_id) &
-    # Forwarded from channel
-    (F.forward_from_chat.id == config.telegram.chat_id)
+    F.chat.id == config.telegram.discussion_chat_id,
 )
 
 
-@router.message()
+@router.message(F.forward_from_chat.id == config.telegram.chat_id)
 async def handle_discussion(message: Message) -> None:
     """
     Handle messages forwarded from channel to discussion group.
@@ -51,3 +50,16 @@ async def handle_discussion(message: Message) -> None:
         elif isinstance(media[0], InputMediaVideo):
             # Single video
             await message.answer_video(video=media[0].media, **kwargs)
+
+
+@router.message(Command("media"))
+async def post_discussion_media(message: Message) -> None:
+    """
+    Post media to discussion when user replies with /media command
+    """
+
+    if reply := message.reply_to_message:
+        if chat := reply.forward_from_chat:
+            if chat.id == config.telegram.chat_id:
+                # Replied message is forwarded from channel, so we can handle it as advertisement
+                await handle_discussion(reply)
