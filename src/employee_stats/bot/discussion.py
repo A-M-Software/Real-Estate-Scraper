@@ -2,7 +2,7 @@
 
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, InputMediaPhoto, InputMediaVideo
+from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, ReactionTypeEmoji
 
 from src.config import config
 from src.advertisment import load_advertisements
@@ -62,4 +62,5 @@ async def post_discussion_media(message: Message) -> None:
         if chat := reply.forward_from_chat:
             if chat.id == config.telegram.chat_id:
                 # Replied message is forwarded from channel, so we can handle it as advertisement
+                await message.react([ReactionTypeEmoji(emoji="🫡")])
                 await handle_discussion(reply)
