@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from asyncio import sleep
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, ReactionTypeEmoji
@@ -39,6 +40,10 @@ async def handle_discussion(message: Message) -> None:
         # Prepare each media page
         media = all_media[offset:offset + 10]
         kwargs = {"reply_to_message_id": message.message_id}
+
+        if offset:
+            # Wait a bit before posting next message
+            await sleep(5)
 
         if len(media) > 1:
             # Few photos/videos => send as media group
