@@ -39,6 +39,8 @@ class Advertisement(BaseModel):
 
     # Images
     photo_url: str | None = None
+    photo_urls: list[str] = Field(default_factory=list)
+    video_urls: list[str] = Field(default_factory=list)
 
     # Internal
     chat_id: int | None = None
@@ -134,6 +136,10 @@ class Advertisement(BaseModel):
             # Found words indicating that brokers are forbidden
             text += "🚫 Посередникам не турбувати\n"
 
+        # Link & ID
+
+        text += f"ℹ️ <a href=\"{self.url}\">Переглянути на {self.source}</a> (<code>{self.id}</code>)\n"
+
         # Description
 
         if self.description:
@@ -146,26 +152,6 @@ class Advertisement(BaseModel):
                 text += f"\n<blockquote expandable>{self.description}</blockquote>"
 
         return text
-
-    @property
-    def url_button_markup(self) -> InlineKeyboardMarkup | None:
-        """
-        Get URL button markup for Telegram message if URL is available
-        """
-
-        # Set default value
-        result = None
-
-        if self.url:
-            result = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(text=f"Переглянути на {self.source}", url=self.url)
-                    ],
-                ]
-            )
-
-        return result
 
     @property
     def brokers_forbidden(self) -> bool:
@@ -247,6 +233,7 @@ def save_advertisements(
         advertisements = [advertisements]
 
     # Add additional advertisements if provided
+    advertisements: list[Advertisement]
     advertisements.extend(_advertisements)
 
     if not config.advertisements_file.parent.exists():

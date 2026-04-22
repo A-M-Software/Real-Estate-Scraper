@@ -90,7 +90,7 @@ class OLXClient(BaseClient):
             published_at = published_at.replace(year=today.year, month=today.month, day=today.day, tzinfo=tz)
             published_at_is_date = False
 
-        elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>[А-Яа-я]+) (?P<year>\d{4}) р.", published_str):
+        elif match := re.match(r"(?P<day>\d{1,2}) (?P<month>\w+) (?P<year>\d{4}) р.", published_str):
             # Advertisement published on a specific date => parse day, month & year
             day = int(match.group("day"))
             year = int(match.group("year"))
@@ -257,7 +257,8 @@ class OLXClient(BaseClient):
         price = int(float(price_str.replace(" ", "")))
 
         # Images
-        photo_url, *_ = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src") + [None]  # type: str
+        photo_urls: list[str] = main.xpath(".//div[@data-testid=\"ad-photo\"]//img/@src")
+        photo_url = photo_urls[0] if photo_urls else None
 
         return Advertisement(
             # Apartment info
@@ -285,6 +286,8 @@ class OLXClient(BaseClient):
 
             # Images
             photo_url=photo_url,
+            photo_urls=photo_urls,
+            video_urls=[],  # TODO?
 
             # Internal
             # data=text,  # Weighs too much (anyway we can get it from the URL)
@@ -309,28 +312,30 @@ class OLXClient(BaseClient):
         # Prepare parameters for searching
         kwargs = {
             "currency": "USD",
+            # "search[dist]": 5,  # Search within 5 km radius (to include nearby areas)
             "search[private_business]": "private",  # Only owner
             "search[order]": "created_at:desc",  # Publication date (descending)
         }
 
         # Load advertisements
-        data = await self.search_advertisements(**kwargs)
-        index = 0
+        all_data = await self.search_advertisements(**kwargs)
+        data = []
 
-        for index, item in enumerate(data):
+        for index, item in enumerate(all_data):
             if item["id"] in existing_ids and not ignore_existing:
                 # Found an existing advertisement, stop loading more
-                self.logger.info(f"Found an existing ID={item['id']}, stop loading more")
-                break
+                self.logger.info(f"Found an existing ID={item['id']}")
 
             elif after_date is not None and item["published_at"] < after_date and not item["is_promoted"]:
                 # Found an advertisement published before the specified date, stop loading more
-                self.logger.info(f"Found an ID posted before '{after_date}', stop loading more")
-                break
+                self.logger.info(f"Found an ID posted before '{after_date}'")
 
-        # Limit to only new advertisements
-        self.logger.info(f"Limiting to {index} new advertisement(s) (excluding existing and old ones)")
-        data = data[:index]
+            else:
+                # Found new advertisement
+                data.append(item)
+
+        # Log new advertisements
+        self.logger.info(f"Found {len(data)} advertisement(s)")
 
         for duplicate_index, duplicate_item in reversed(list(enumerate(data))):
             for check_index, check_item in enumerate(data[:duplicate_index]):

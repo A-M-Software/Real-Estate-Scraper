@@ -5,6 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 
 from src.config import config
 from src.employee_stats.bot.handlers import router
+from src.employee_stats.bot.discussion import router as discussion_router
 from src.logger import bot_logger as logger
 
 
@@ -32,6 +33,10 @@ async def main() -> None:
     bot = build_bot()
     dp = Dispatcher()
     dp.include_router(router)
+
+    if config.telegram.discussion_chat_id:
+        # Discussion ID is set => include router
+        dp.include_router(discussion_router)
 
     await dp.start_polling(bot)
 

@@ -95,6 +95,13 @@ class DimRiaClient(BaseClient):
         Convert raw data from the Dim.Ria API to an Advertisement object.
         """
 
+        def prepare_image_url(url: str) -> str:
+            """
+            Helper function to prepare image URLs
+            """
+
+            return cls.cdn_url + url.replace(".jpg", "xl.jpg")
+
         return Advertisement(
             # Apartment info
             city=data.get("city_name_uk"),
@@ -118,7 +125,13 @@ class DimRiaClient(BaseClient):
             price_per_sqm=data.get("price_type") == "за квадрат",
 
             # Images
-            photo_url=(cls.cdn_url + data["main_photo"].replace(".jpg", "xl.jpg")) if data.get("main_photo") else None,
+            photo_url=prepare_image_url(data["main_photo"]) if data.get("main_photo") else None,
+            photo_urls=[
+                prepare_image_url(photo["file"])
+                for photo in (data.get("photos") or {}).values()
+                if photo.get("file")
+            ],
+            video_urls=[],  # TODO
 
             # Internal
             data=data,  # Save raw data for possible future use
