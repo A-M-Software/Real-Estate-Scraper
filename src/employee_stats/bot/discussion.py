@@ -9,7 +9,6 @@ from aiogram.exceptions import TelegramAPIError
 from src.config import config
 from src.advertisment import load_advertisements
 
-
 router = Router()
 router.message.filter(
     # Only messages sent to discussion chat
@@ -56,6 +55,8 @@ async def handle_discussion(message: Message) -> None:
         elif isinstance(media[0], InputMediaVideo):
             # Single video
             await message.answer_video(video=media[0].media, **kwargs)
+
+    return None
 
 
 @router.message(Command("media"))
