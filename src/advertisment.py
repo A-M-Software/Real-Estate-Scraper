@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from .config import config
+from .logger import base_logger
 
 # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 _MAX_DESC_LENGTH = 512
@@ -75,6 +76,10 @@ class Advertisement(BaseModel):
 
             if max(width, height) > _MAX_PHOTO_SIZE:
                 # Scale down the image
+                base_logger.info(
+                    f"Scaling down advertisement image '{photo_url}' "
+                    f"(exceeding {_MAX_PHOTO_SIZE}x{_MAX_PHOTO_SIZE} size)"
+                )
                 scale = _MAX_PHOTO_SIZE / max(width, height)
 
                 # Adjust the sizes
@@ -83,6 +88,7 @@ class Advertisement(BaseModel):
 
                 # Replace in the URL
                 photo_url = re.sub(r"\d+x\d+$", f"{width}x{height}", photo_url)
+                base_logger.info(f"Successfully adjusted photo url '{photo_url}'")
 
         return photo_url
 
@@ -307,9 +313,15 @@ def save_advertisements(
         dump(data, file, default=str, ensure_ascii=False, indent=2)
 
 
-def load_advertisements(ids: list[int] | None = None) -> list[Advertisement]:
+def load_advertisements(
+        missing: bool = False,
+        ids: list[int] | None = None,
+) -> list[Advertisement]:
     """
     Load advertisements from file.
+
+    If ``ids`` given, loads only those advertisements with these IDs.
+    If ``missing`` set to True, loads only those advertisements that do not have ``message_id`` (failed to be sent).
     """
 
     if not config.advertisements_file.exists():
@@ -318,4 +330,14 @@ def load_advertisements(ids: list[int] | None = None) -> list[Advertisement]:
 
     with config.advertisements_file.open("r") as file:
         # Load data from file
-        return [Advertisement(**data) for data in load(file) if not ids or data["id"] in ids]
+        advertisements = [Advertisement(**data) for data in load(file)]
+
+    if missing:
+        # Filter only failed
+        advertisements = [adv for adv in advertisements if adv.message_id is None]
+
+    if ids:
+        # Filter by IDs
+        advertisements = [adv for adv in advertisements if adv.id in ids]
+
+    return advertisements

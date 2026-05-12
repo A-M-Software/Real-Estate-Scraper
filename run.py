@@ -38,11 +38,15 @@ class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
         default=True,
         description="send advertisements to telegram",
     )
+    resend: CliImplicitFlag[bool] = Field(
+        default=True,
+        description="resend advertisements that failed to be sent to telegram",
+    )
     only: list[ClientName] | None = Field(
         default=None,
         description="Collect advertisements only from these sources. If not set, collect from all.",
     )
-    resend: list[int] = Field(
+    ids: list[int] = Field(
         default=None,
         description=(
             "List of advertisement IDs to resend to Telegram, even if they were sent before. "
@@ -77,5 +81,6 @@ if __name__ == "__main__":
             only=settings.only,
             send=settings.send,
             resend=settings.resend,
+            ids=settings.ids,
         )
     )

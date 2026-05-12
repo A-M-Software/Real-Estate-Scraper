@@ -13,7 +13,8 @@ async def scrap_advertisements(
         ignore_existing: bool = False,
         only: list[ClientName] | None = None,
         send: bool = True,
-        resend: list[int] | None = None,
+        resend: bool = True,
+        ids: list[int] | None = None,
 ) -> None:
     """
     Collect advertisements from all sources.
@@ -21,19 +22,19 @@ async def scrap_advertisements(
 
     advertisements: list[Advertisement] = []
 
-    if resend:
+    if ids:
         # Collect advertisements from data file
         logger.info(f"Collecting advertisements from data files to resend")
-        advertisements = load_advertisements(ids=resend)
+        advertisements = load_advertisements(ids=ids)
 
-        for resend_id in resend:
+        for id_ in ids:
             for advertisement in advertisements:
-                if advertisement.id == resend_id:
+                if advertisement.id == id_:
                     # Found
                     break
             else:
                 # Not found
-                logger.warning(f"ID={resend_id} not found in data file")
+                logger.warning(f"ID={id_} not found in data file")
     else:
         # Collect from clients
         for Client in ALL_CLIENTS:
@@ -60,6 +61,18 @@ async def scrap_advertisements(
                     f"Failed to collect advertisements from {Client.__name__}",
                     exc_info=True,
                 )
+
+        if resend:
+            # Collect failed advertisements as well
+            logger.info(f"Collecting advertisements that failed to be sent to Telegram")
+
+            if missed := load_advertisements(missing=True):
+                # Found
+                logger.warning(
+                    f"Found {len(missed)} advertisements that failed "
+                    f"to be sent to Telegram, adding to sending list",
+                )
+                advertisements.extend(missed)
 
         # Sort by published date
         advertisements.sort(key=lambda adv: adv.published_at)
