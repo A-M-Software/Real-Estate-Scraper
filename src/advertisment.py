@@ -54,7 +54,7 @@ class Advertisement(BaseModel):
         For OLX advertisements, we'll try to shrink photo URLs sizes.
         """
 
-        if self.source.lower() == "OLX":
+        if self.source.lower() == "olx":
             # Shrink photo sizes
             self.photo_url = self._shrink_photo_url(self.photo_url)
             self.photo_urls = list(map(self._shrink_photo_url, self.photo_urls))
@@ -68,21 +68,21 @@ class Advertisement(BaseModel):
         if photo_url is None:
             return None
 
-        if match := re.match(r"(?P<width>\d+)x(?P<height>\d+)$", photo_url):
+        if match := re.search(r"(?P<width>\d+)x(?P<height>\d+)$", photo_url):
             # Get photo sizes
             width = int(match.group("width"))
             height = int(match.group("height"))
 
-            if max(width, height) > _MAX_DESC_LENGTH:
+            if max(width, height) > _MAX_PHOTO_SIZE:
                 # Scale down the image
-                scale = _MAX_DESC_LENGTH / max(width, height)
+                scale = _MAX_PHOTO_SIZE / max(width, height)
 
                 # Adjust the sizes
                 width = int(width * scale)
                 height = int(height * scale)
 
                 # Replace in the URL
-                re.sub(r"\d+x\d+$", f"{width}x{height}", photo_url)
+                photo_url = re.sub(r"\d+x\d+$", f"{width}x{height}", photo_url)
 
         return photo_url
 
