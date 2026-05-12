@@ -46,7 +46,7 @@ class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
         default=None,
         description="Collect advertisements only from these sources. If not set, collect from all.",
     )
-    ids: list[int] = Field(
+    ids: list[int] | None = Field(
         default=None,
         description=(
             "List of advertisement IDs to resend to Telegram, even if they were sent before. "
