@@ -40,14 +40,21 @@ async def send_advertisements(
                 )
                 continue
 
-        # Send each advertisement to Telegram channel
-        await send_advertisement(advertisement, bot, chat_id, **kwargs)
+        try:
+            # Send each advertisement to Telegram channel
+            await send_advertisement(advertisement, bot, chat_id, **kwargs)
 
-        # Save updated advertisements with message IDs to the file
-        save_advertisements(advertisements=advertisements)
+        except Exception:
+            # Unable to send advertisement
+            logger.error(f"Unable to send advertisement ID={advertisement.id}", exc_info=True)
 
-        # Sleep for a short time to avoid hitting Telegram API rate limits
-        await sleep(2)
+        else:
+            # Save updated advertisements with message IDs to the file
+            save_advertisements(advertisements=advertisements)
+
+        finally:
+            # Sleep for a short time to avoid hitting Telegram API rate limits
+            await sleep(2)
 
 
 async def send_advertisement(advertisement: Advertisement, bot: Bot, chat_id: int, **kwargs) -> None:
