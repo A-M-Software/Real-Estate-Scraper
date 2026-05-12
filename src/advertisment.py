@@ -269,7 +269,7 @@ def save_advertisements(
         dump(data, file, default=str, ensure_ascii=False, indent=2)
 
 
-def load_advertisements() -> list[Advertisement]:
+def load_advertisements(ids: list[int] | None = None) -> list[Advertisement]:
     """
     Load advertisements from file.
     """
@@ -280,4 +280,4 @@ def load_advertisements() -> list[Advertisement]:
 
     with config.advertisements_file.open("r") as file:
         # Load data from file
-        return [Advertisement(**data) for data in load(file)]
+        return [Advertisement(**data) for data in load(file) if not ids or data["id"] in ids]

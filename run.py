@@ -42,6 +42,13 @@ class Settings(BaseSettings, cli_parse_args=True, cli_kebab_case=True):
         default=None,
         description="Collect advertisements only from these sources. If not set, collect from all.",
     )
+    resend: list[int] = Field(
+        default=None,
+        description=(
+            "List of advertisement IDs to resend to Telegram, even if they were sent before. "
+            "They will be collected from data file. If any ID is not found, it will be skipped."
+        ),
+    )
 
     def model_post_init(self, _, /) -> None:
         """
@@ -69,5 +76,6 @@ if __name__ == "__main__":
             ignore_existing=settings.ignore_existing,
             only=settings.only,
             send=settings.send,
+            resend=settings.resend,
         )
     )
