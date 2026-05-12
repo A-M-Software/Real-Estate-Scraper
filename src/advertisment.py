@@ -5,12 +5,12 @@ from json import load, dump
 from datetime import datetime
 
 from pydantic import BaseModel, Field
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from .config import config
 
 # Maximum length of description in Telegram message (to avoid exceeding Telegram limits)
 _MAX_DESC_LENGTH = 512
+_MAX_PHOTO_SIZE = 2000  # Max width/height of the photo
 
 
 class Advertisement(BaseModel):
@@ -47,6 +47,44 @@ class Advertisement(BaseModel):
     message_id: int | None = None  # Telegram message ID after sending to Telegram channel
     collected_at: datetime = Field(default_factory=lambda: datetime.now(tz=config.tz))
     data: dict | str | None = None
+
+    def model_post_init(self, _, /) -> None:
+        """
+        Adjust fields after init.
+        For OLX advertisements, we'll try to shrink photo URLs sizes.
+        """
+
+        if self.source.lower() == "OLX":
+            # Shrink photo sizes
+            self.photo_url = self._shrink_photo_url(self.photo_url)
+            self.photo_urls = list(map(self._shrink_photo_url, self.photo_urls))
+
+    @staticmethod
+    def _shrink_photo_url(photo_url: str | None) -> str | None:
+        """
+        If photo has WIDTH x HEIGHT tail in URL, we'll adjust it
+        """
+
+        if photo_url is None:
+            return None
+
+        if match := re.match(r"(?P<width>\d+)x(?P<height>\d+)$", photo_url):
+            # Get photo sizes
+            width = int(match.group("width"))
+            height = int(match.group("height"))
+
+            if max(width, height) > _MAX_DESC_LENGTH:
+                # Scale down the image
+                scale = _MAX_DESC_LENGTH / max(width, height)
+
+                # Adjust the sizes
+                width = int(width * scale)
+                height = int(height * scale)
+
+                # Replace in the URL
+                re.sub(r"\d+x\d+$", f"{width}x{height}", photo_url)
+
+        return photo_url
 
     @property
     def formatted_text(self) -> str:
